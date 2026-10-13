@@ -33,9 +33,12 @@ void seg019_exit_chain(void);                   /* sys/sysentry.c */
    (the buffer seg048:55EA names at its checkpoint 4) is at the load segment plus 6955h. */
 #define PORT_HEAP_FIRST (0x6955u + 0x0800u)     /* the runtime's PORT_LOAD_SEG, 0800h, plus 6955h */
 
-/* the black box (sys/blackbox.c): stage/ leaves out the port's settings file */
+/* the black box (sys/blackbox.c): stage/ copies only the home directory's files a replay reads
+   back: DATA\ whole (UW.CFG, the sound cards, and any file the player put there to be read ahead
+   of the game's own, such as a translated STRINGS.PAK), SAVE0 (the game in progress) and the saved
+   games, SAVE1 to SAVE4; never gog-cd/, roms/, a game folder or the port's own files */
 #define PORT_BLACKBOX 1
-#define BLACKBOX_SKIP "uw1port.cfg"
+#define BLACKBOX_STAGE "DATA", "SAVE0", "SAVE1", "SAVE2", "SAVE3", "SAVE4"
 
 /* the window (plat.h): its title when main gives none, and its icon, written by Exhume's
    tools/icons.py from tools/dist/icon/uw1.svg (not on macOS, where the app's own icon is used) */

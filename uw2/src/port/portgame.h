@@ -19,9 +19,12 @@
 void seg021_exit_chain(void);                   /* sys/sysentry.c */
 #define PORT_EXIT_CHAIN() seg021_exit_chain()
 
-/* the black box (sys/blackbox.c): stage/ leaves out the port's settings file */
+/* the black box (sys/blackbox.c): stage/ copies only the home directory's files a replay reads
+   back: DATA\ whole (UW.CFG, the sound cards, and any file the player put there to be read ahead
+   of the game's own, such as a translated STRINGS.PAK), SAVE0 (the game in progress) and the saved
+   games, SAVE1 to SAVE4; never gog-cd/, roms/, a game folder or the port's own files */
 #define PORT_BLACKBOX 1
-#define BLACKBOX_SKIP "uw2port.cfg"
+#define BLACKBOX_STAGE "DATA", "SAVE0", "SAVE1", "SAVE2", "SAVE3", "SAVE4"
 
 /* the window (plat.h): its title when main gives none, and its icon, written by
    tools/dist/icon/make-icons.py (not on macOS, where the app's own icon is used) */

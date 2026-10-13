@@ -33,6 +33,8 @@
 #                      the sessions in the port and the UBSan build + ailcheck + deep fuzzing +
 #                      the coverage report
 #   make verify        only the sessions against their goldens, in the port (tools/replay.py verify)
+#   make blackbox      the black box: a player's sessions recorded, staged and pruned as a
+#                      player's build does it (Exhume's tools/blackboxcheck.py, as make test runs it)
 #   make golden        regenerate every session's golden from DOS (tools/replay.py golden)
 #   make fuzz          the routine fuzzing, quick (tools/fuzzasm.py; FUZZ=--deep for the long run)
 #   make vectors       the test vectors: UW2.EXE's routines on synthetic inputs, written to vectors/
@@ -67,7 +69,7 @@ TASM_DISKS ?=
 
 .PHONY: game exact check check-all boot setup setup-emu2 setup-exhume setup-sound setup-libs setup-port hooks port-check port port-debug \
         port-release web webcheck package help \
-        test test-full verify golden fuzz vectors coverage
+        test test-full verify blackbox golden fuzz vectors coverage
 .DEFAULT_GOAL := game
 
 game:
@@ -156,6 +158,9 @@ test-full:
 
 verify:
 	@$(PY) tools/replay.py verify all
+
+blackbox:
+	@UW2DECOMP="$(CURDIR)" $(PY) $(EXHUME)/tools/blackboxcheck.py --config $(EXHUME)/examples/uw2/exhume.toml
 
 golden:
 	@$(PY) tools/replay.py golden all

@@ -28,7 +28,7 @@ The Makefile is Exhume's template (`tools/templates/Makefile`); `make help` list
 | `make icons` | the icon files from their SVG sources ([The icon](#the-icon)) |
 | `make test` | the gate, the port, the quick routine fuzzing and every session against its golden ([Testing](#testing)) |
 | `make test-full` | the long tier ([Testing](#testing)) |
-| `make verify`, `make fuzz`, `make coverage` | one part of the tests each |
+| `make verify`, `make fuzz`, `make coverage`, `make blackbox` | one part of the tests each (`make blackbox`: the black box, Exhume's `tools/blackboxcheck.py`, which CI also runs on Windows) |
 | `make golden` | every session's golden reference made again from DOS (each replayed twice, checked identical) |
 | `make golden-check` | every session replayed twice in DOS by the replay DOS build and compared with its committed golden; writes nothing |
 
@@ -134,6 +134,7 @@ The recordings and their goldens are committed under `tests/replay`. The moves i
 | `talk` | the Red Key from the pack in the chest by the start, the locked door west of it unlocked and opened, the walk to Bragit's room in the human encampment, and a conversation with Bragit (whoami 67, the first man to talk to) with three answers. Talk mode clicks over a grid of the view in four directions, since Bragit wanders about his room: the misses say "You cannot talk to that", the first hit starts the conversation, and the rest fall in the conversation screen. Its golden is the largest (11 MB), since every click is a full checkpoint |
 | `load` | slot I, the save `items` makes, loaded from the main menu ("Journey Onward") |
 | `intro` | the title and the whole introduction, about four and a half minutes, to the main menu |
+| `female` | the way in as `newgame`'s, but a female character with the last portrait (Down at the sex question, Down four times at the portraits), then a few seconds in the game. Her body pictures after the first start past 7FFFh in CHRBTNS.GR's block, where the port read them through signed offsets and stopped (issue 8) |
 | `savecursor` | the sack by the start held on the cursor, where Ctrl+S and Ctrl+R are refused ("You cannot select options partway through an action") and a click on the icons is ignored; then the sack into the first slot with the right button, a save to slot I and a restore |
 
 `load` replays the saved game `items` writes (`[replay] stage_from`); the golden tools take it from `items`' own DOS run. To replay `load` by hand, give it a directory holding that `SAVE1` with `--stage DIR`.

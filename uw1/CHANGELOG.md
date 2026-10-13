@@ -2,6 +2,15 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw1-vX.Y.Z`.
 
+## Unreleased (1.0.2)
+
+- **Fixed:** creating a female character crashed the game on choosing any portrait but the first (issue 8). DOS draws her; the port now does too.
+- **Fixed:** opening the map could crash the game on a Mac with Apple silicon, and was one byte from doing so on other systems, on a level whose notes were all erased before a new level was first saved: the original game then reads that level's notes from another level's map, and one of those "notes" had no end (issue 7). The port now cuts such a note short; what the map shows is unchanged.
+- **Fixed:** the recording of a session the port crashed in could be cut short on Windows, so that it did not replay to the crash: the crash handler did not see a fault on the game's thread, where the game runs (issue 8). The handler is now installed on the game's thread too, so the recording is written out whole.
+- **Changed:** a session's recording folder now holds only what a replay of it needs from the home folder: the saved games and the `DATA` folder (`UW.CFG`, and any file of yours there that the port reads in place of the game's own, such as a translated `STRINGS.PAK`). Before, it copied everything else there too: a game copied out of GOG's CD image (`gog-cd`), MT-32 ROMs, or a game folder you put there, none of which belongs in a bug report. Links to folders or files elsewhere are not followed.
+- **Fixed:** once the game had been running for a few minutes, a cutscene's colour cycling turned on every pass instead of at its own pace. It now keeps DOS's pace however long the game has run.
+- **Fixed:** a strings file with a block larger than 32 KB (only modified or translated files have one; the GOG release's do not) gave garbled text. The port now reads it as DOS does.
+
 ## 1.0.1 (10 October 2026)
 
 - **Fixed:** sidestepping and walking backwards could stall or drift, depending on the way you faced: a sidestep might not move at all or slide off at an angle, and walking backwards might go nowhere. They now go the way you press, whichever way you face (issue 6). To do this the 3D view draws at most 32 frames a second, as in the UW2 port, which is what the game's movement was written for.
