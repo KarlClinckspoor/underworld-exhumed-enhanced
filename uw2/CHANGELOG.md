@@ -2,7 +2,7 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw2-vX.Y.Z` (before the move to Underworld Exhumed, `vX.Y.Z`).
 
-## Unreleased (1.2.3)
+## 1.2.3 (unreleased)
 
 - **Fixed:** creating a female character crashed the game on choosing any portrait but the first (UW1's issue 8, which UW2 shares). DOS draws her; the port now does too.
 - **Fixed:** a map note with no end in a damaged or edited save could crash the game when the map was opened. The port now cuts such a note short, as the UW1 port does for its issue 7.
