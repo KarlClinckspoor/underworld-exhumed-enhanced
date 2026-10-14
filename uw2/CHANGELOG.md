@@ -11,6 +11,7 @@ For players. Each release's notes are drafted from here. Releases are tagged `uw
 - **Fixed:** once the game had been running for a few minutes, a cutscene's colour cycling turned on every pass instead of at its own pace. It now keeps DOS's pace however long the game has run.
 - **Fixed:** a strings file with a block larger than 32 KB (only modified or translated files have one; the GOG release's do not) gave garbled text. The port now reads it as DOS does.
 - **Fixed:** restoring a game while running fast or falling could put you down a little further on than DOS does (UW1's issue 10, which UW2 shares in its code). The original works out the first step after a restore in 16 bits, and the result wraps; the port worked it out in 32 bits. It now does as DOS does.
+- **New:** optional enhancement restore-at-rest (UW1's issue 10, which UW2 shares in its code; `--enhance restore-at-rest`). A restored game starts at rest where it was saved, instead of keeping the speed and any fall of the game you restored from. A game saved in mid-air still falls, from rest.
 
 ## 1.2.2 (10 October 2026)
 
