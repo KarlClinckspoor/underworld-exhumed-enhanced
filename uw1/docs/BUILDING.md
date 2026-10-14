@@ -136,6 +136,7 @@ The recordings and their goldens are committed under `tests/replay`. The moves i
 | `intro` | the title and the whole introduction, about four and a half minutes, to the main menu |
 | `female` | the way in as `newgame`'s, but a female character with the last portrait (Down at the sex question, Down four times at the portraits), then a few seconds in the game. Her body pictures after the first start past 7FFFh in CHRBTNS.GR's block, where the port read them through signed offsets and stopped (issue 8) |
 | `savecursor` | the sack by the start held on the cursor, where Ctrl+S and Ctrl+R are refused ("You cannot select options partway through an action") and a click on the icons is ignored; then the sack into the first slot with the right button, a save to slot I and a restore |
+| `fallrestore` | the way to Bragit's room as `talk`'s, then west along the corridor to the platform at (9,6), a save to slot I there, a run north off its edge and Ctrl+R while still falling. A restore keeps the player's speed and the first step after it is 40h units long, so MOTION.C's 16-bit multiply wraps in DOS (821 * 64 and 547 * 64), where the port kept 32 bits and landed the player a step further on (issue 10) |
 
 `load` replays the saved game `items` writes (`[replay] stage_from`); the golden tools take it from `items`' own DOS run. To replay `load` by hand, give it a directory holding that `SAVE1` with `--stage DIR`.
 

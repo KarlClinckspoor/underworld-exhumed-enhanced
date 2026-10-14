@@ -236,7 +236,7 @@ saves = ["SAVE1", "SAVE2", "SAVE3", "SAVE4"]
 shared_opts = "-mm -1 -G -O -Y -d"     # replay.c in the replay DOS build, as UW2's
 # the replay DOS build's link: the modding build, to which replay.py adds --out, --obj, --add
 link = "{python} tools/link.py --mod --config {config}"
-order = ["newgame", "walk", "sound", "soundfm", "soundmt", "items", "talk", "load", "intro", "savecursor", "female"]
+order = ["newgame", "walk", "sound", "soundfm", "soundmt", "items", "talk", "load", "intro", "savecursor", "female", "fallrestore"]
 c0_signature_at = 8                    # DS:8, after DS:0..3 (an overlay stub's tail) and C0's DS:4..7
 stage_from = { load = "items" }
 # the port's driver logs, and the real drivers run against them (Exhume's tools/ailcheck.py)
@@ -328,6 +328,7 @@ load = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 intro = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 savecursor = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 female = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
+fallrestore = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 sound = "3 7 220 1 sound\r\n1 7 220 1 speech\r\n0 cuts\r\n"
 soundfm = "3 7 220 1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 soundmt = "6 2 330 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
@@ -573,6 +574,51 @@ savecursor = [
     "k:Control+s", "w:1500", "k:Enter", "w:1500", "t:held", "w:800", "k:Enter", "w:4000",
     "s:saved", "h:a,1000", "w:800", "k:Control+r", "w:1500", "k:Enter", "w:5000", "s:restored",
     "h:w,600", "w:1500", "s:end"
+]
+# a restore while falling (issue 10's port difference): the way to Bragit's room as talk's (the
+# Red Key, the door at (22,5) opened), then west along row 5 to the wall at (16,5) (fourteen steps,
+# so that a step a slope refuses does not matter), north to (16,6), and west along the corridor
+# with fixed steps over the slope at (10,6) to the platform at (9,6), height B, facing north; a
+# save to slot I there ("edge"), w held a second, which runs north off the platform, ten heights
+# down into the corridor at (9,7), and Ctrl+R and Enter while the player is still falling. A
+# restore does not reset the player's motion (PN), and check_physics caps the first step after
+# it at 40h units, so space_to_motion's MP.vel[MP.major] * CP->time is 821 * 64 = 52544 and then
+# 547 * 64 = 35008: a 16-bit int multiply in Turbo C, which wraps to -12992 and -30528 in DOS,
+# so the player there moves three steps and a remainder where 32 bits would make it four
+fallrestore = [
+    "@_chargen", "w:10000", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+A", "w:600",
+    "k:Shift+A", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+A", "w:600", "k:Shift+A", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+D", "w:600", "k:Shift+D", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+D", "w:600", "k:Shift+D", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+A", "w:600", "k:Shift+A", "w:600", "k:Shift+W", "w:600",
+    "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+W", "w:600", "k:Shift+D", "w:600",
+    "k:Shift+D", "w:600", "k:1", "w:500", "k:1", "w:600", "k:Shift+W", "w:700", "k:1", "w:500",
+    "k:1", "w:500", "k:F3", "w:500", "M", "m:185,240", "w:300", "c:right,200", "w:1500", "M",
+    "m:505,170", "w:300", "c:left,200", "w:1500", "k:F6", "w:500", "M", "m:505,170", "w:300",
+    "c:right,200", "w:2000", "k:2", "w:500", "k:Shift+A", "w:600", "k:Shift+A", "w:600",
+    "k:Shift+A", "w:600", "k:Shift+A", "w:600", "k:Shift+W", "w:700", "k:Shift+D", "w:600",
+    "k:Shift+D", "w:600", "M", "m:505,182", "w:300", "c:right,200", "w:1500", "M", "m:300,150",
+    "w:300", "c:right,200", "w:2000", "M", "m:300,150", "w:300", "c:right,200", "w:5000",
+    "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100",
+    "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100",
+    "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100",
+    "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+D", "w:1100", "k:Shift+D", "w:1100",
+    "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+A", "w:1100", "k:Shift+A", "w:1100",
+    "s:corridor", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W",
+    "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W",
+    "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+W",
+    "w:1100", "k:Shift+W", "w:1100", "k:Shift+W", "w:1100", "k:Shift+D", "w:1100", "k:Shift+D",
+    "w:1100", "s:edge", "k:Control+s", "w:1500", "k:Enter", "w:1500", "t:edge", "w:800", "k:Enter",
+    "w:4000", "s:saved", "h:w,1000", "k:Control+r", "w:1500", "s:prompt", "k:Enter", "w:5000",
+    "s:restored", "w:2000", "s:end"
 ]
 
 [test]

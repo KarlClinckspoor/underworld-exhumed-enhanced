@@ -10,6 +10,7 @@ For players. Each release's notes are drafted from here. Releases are tagged `uw
 - **Changed:** a session's recording folder now holds only what a replay of it needs from the home folder: the saved games and the `DATA` folder (`UW.CFG`, and any file of yours there that the port reads in place of the game's own, such as a translated `STRINGS.PAK`). Before, it copied everything else there too: a game copied out of GOG's CD image (`gog-cd`), MT-32 ROMs, or a game folder you put there, none of which belongs in a bug report. Links to folders or files elsewhere are not followed.
 - **Fixed:** once the game had been running for a few minutes, a cutscene's colour cycling turned on every pass instead of at its own pace. It now keeps DOS's pace however long the game has run.
 - **Fixed:** a strings file with a block larger than 32 KB (only modified or translated files have one; the GOG release's do not) gave garbled text. The port now reads it as DOS does.
+- **Fixed:** restoring a game while running fast or falling could put you down a little further on than DOS does (issue 10). The original works out the first step after a restore in 16 bits, and the result wraps; the port worked it out in 32 bits. It now does as DOS does. Like DOS, a restore still keeps your speed and a fall in progress, so you can still take fall damage on loading.
 
 ## 1.0.1 (10 October 2026)
 
