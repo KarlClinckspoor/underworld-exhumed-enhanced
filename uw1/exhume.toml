@@ -236,9 +236,12 @@ saves = ["SAVE1", "SAVE2", "SAVE3", "SAVE4"]
 shared_opts = "-mm -1 -G -O -Y -d"     # replay.c in the replay DOS build, as UW2's
 # the replay DOS build's link: the modding build, to which replay.py adds --out, --obj, --add
 link = "{python} tools/link.py --mod --config {config}"
-order = ["newgame", "walk", "sound", "soundfm", "soundmt", "items", "talk", "load", "intro", "savecursor", "female", "fallrestore"]
+order = ["newgame", "walk", "sound", "soundfm", "soundmt", "items", "talk", "load", "intro", "savecursor", "female", "fallrestore", "tooheavy"]
 c0_signature_at = 8                    # DS:8, after DS:0..3 (an overlay stub's tail) and C0's DS:4..7
-stage_from = { load = "items" }
+# tooheavy starts from the saved game setup/tidy-heavy writes: a port-made setup session whose
+# script uses a test's cheats (recording format 6), which only the port replays, so its saved
+# game comes from the port's replay in golden and verify alike, and DOS judges tooheavy from it
+stage_from = { load = "items", tooheavy = "setup/tidy-heavy" }
 # the port's driver logs, and the real drivers run against them (Exhume's tools/ailcheck.py)
 port_sound_logs = ["--ail-log", "--hw-log"]
 driver_check = "{python} {exhume}/tools/ailcheck.py --config {config} {ail} {hw}"
@@ -329,6 +332,7 @@ intro = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 savecursor = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 female = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 fallrestore = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
+tooheavy = "0 -1 -1 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 sound = "3 7 220 1 sound\r\n1 7 220 1 speech\r\n0 cuts\r\n"
 soundfm = "3 7 220 1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
 soundmt = "6 2 330 -1 sound\r\n0 -1 -1 -1 speech\r\n0 cuts\r\n"
@@ -553,6 +557,19 @@ talk = [
 load = [
     "w:9000", "k:Escape", "w:3000", "s:menu", "k:Enter", "w:3000", "s:slots", "k:Enter",
     "w:6000", "s:loaded", "h:w,800", "w:1500", "s:load_end"
+]
+# issue 9, in DOS: from the saved game setup/tidy-heavy writes (the player carrying all they can,
+# 200 coins, with 20 more at their feet), "Journey Onward" and slot I; look down twice, get mode
+# (F3), the right button on the coins, Enter at "Move how many? 1": "That is too heavy for you to
+# pick up", and the split stack's copy is lost (player_3dget unlinks it and never frees it); then
+# a save to slot I described "leak" and a restore of it, whose check of the object lists says
+# "Problems in object list". The golden is DOS's, so the port's faithful leak is proven against it
+tooheavy = [
+    "w:9000", "k:Escape", "w:3000", "k:Enter", "w:3000", "k:Enter", "w:9000", "s:loaded", "k:1",
+    "w:1000", "k:1", "w:1500", "k:F3", "w:500", "M", "m:314,216", "w:300", "c:right,200",
+    "w:2000", "s:howmany", "k:Enter", "w:2000", "s:tooheavy", "k:Control+s", "w:1500", "k:Enter",
+    "w:1500", "t:leak", "w:800", "k:Enter", "w:4000", "s:saved", "k:Control+r", "w:1500",
+    "k:Enter", "w:6000", "s:restored", "w:2000"
 ]
 # boot with no saved game and no key at all: the title, then the whole introduction (about
 # four and a half minutes), to the main menu. The only session that plays a cutscene through

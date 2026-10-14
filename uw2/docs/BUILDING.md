@@ -183,7 +183,7 @@ The sessions run at once, one per core up to eight (`-j N` changes it; four for 
 
 1. Write its steps into `tools/replay.py`'s `SESSIONS` (the steps of `tools/replaydos.mjs`) and, for a sound card, its `UW.CFG` lines into `CFGS`.
 2. Record it in DOS: `python3 tools/replay.py record build/replay/NAME --session NAME`, and copy `RECORD.OUT` to `tests/replay/NAME.rec` (and `UW.CFG` to `tests/replay/NAME.cfg`). Look at the screenshots it took to see that it did what you meant.
-3. If it starts from another session's saved game, add it to `tools/golden.py`'s `STAGE_FROM`.
+3. If it starts from another session's saved game, add it to `tools/golden.py`'s `STAGE_FROM`. The port's input scripts can set a state up with a test's cheats ([docs/BUILDING.md](../../docs/BUILDING.md#cheats-for-tests)); a session staged from such a setup session needs Exhume's `tools/golden.py`, which makes that saved game in the port, where this `tools/golden.py` replays every stage source in DOS. UW2 has no setup session yet.
 4. `python3 tools/replay.py golden NAME` makes its golden (DOS twice, checked identical), and `python3 tools/replay.py verify NAME` replays it in the port. Commit the recording and `tests/replay/golden/NAME` together.
 
 ## The gate

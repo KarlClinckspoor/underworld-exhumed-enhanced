@@ -77,6 +77,29 @@ The ports take `--input-script FILE`, for tests: keys and mouse events at set ti
 
 A bad line stops the run, naming it. (Related test switches: `UW1PORT_TEXTURE_PROBE` makes UW1's texture mappers draw each face in a colour of its own, for Exhume's `tools/enhcheck.py coverage`; `UWnPORT_HOLE_PROBE=N` clears the 3D view to colour N before each frame and reports the pixels still N after it on stderr, and `UWnPORT_NO_BACK_PASS` leaves out `wide-pitch`'s drawing behind the player, for `tools/enhcheck.py holes`; `UWnPORT_POS_LOG` prints the player's position and facing at the end of the run, with how many 3D frames came under 8 ticks apart, for `tools/movecheck.py`.) The enhancements' sessions are made this way (`tests/replay/enhanced/*/session.script`; Exhume's `tools/enhcheck.py baseline record NAME`). Two recordings of one script differ in timing, since the events arrive between frames while the game reads its input on its own thread; a recording's replay is what is exact.
 
+### Cheats, for tests
+
+A test sometimes needs a game state that scripted play cannot reach cheaply: a character carrying nearly all they can, say, or one on a deep level. An input script can set one up with `cheat` lines, then save the game, and the real test starts from that saved game:
+
+```
+44000 cheat set str 10                 strength 10; the maxima follow (UW1 carries str * 20, UW2 str * 13 + 300)
+44100 cheat give 0xA0 200              200 coins into the pack (or at the feet when it is full or too heavy)
+44200 cheat give 0xA0 20 drop          20 coins at the player's feet
+44300 cheat goto 2 30 30               level 2, square (30, 30)
+```
+
+| Command | What it does |
+| --- | --- |
+| `goto LEVEL X Y` | moves the player as a teleport trap does (`do_teleport`, then the main loop's `new_player_pos`: `ChangeLevel` for another level, then `player_setup`). LEVEL is the game's number (UW1 1 to 9, UW2 1 to 80), X and Y a square, 1 to 62. On the same level a square with no free place near it is refused; on another level, which is not loaded until the move, the game kills a player it cannot place, as it does after any teleport |
+| `give ITEM [QTY [QUALITY]] [drop]` | makes an object with the game's allocator (`CreateObj`): ITEM the game's item id (`src/include/items.h`), decimal or `0x` hex, one a player can carry (0x000 to 0x03F, 0x080 to 0x13F); QTY for a stack, 1 to 511; QUALITY 0 to 63 (the game's default is 40). It goes into the first empty backpack slot on show when the player can carry it (`AddToInventory`, `EncumCheck`), else, or with `drop`, at the player's feet (`put_at`, as a conversation puts things there) |
+| `set FIELD VALUE` | `hp` (1 to the maximum), `mana` (0 to the maximum), `str`, `dex`, `int` (1 to 99) or a skill by name (`attack`, `defense`, `barehand`, `sword`, `axe`, `mace`, `missile`, `mana`... `swimming`; 0 to 30). An attribute or skill is followed by the game's `player_compute`, as a level gained is: the maximum hit points and mana and the weight the player can carry |
+
+Each goes through the game's own routines, so the state it leaves is one the game could hold itself, and a game saved after it loads in DOS (checked: UW1's `setup/tidy-heavy` save, and saves after `goto`, `set` and `give` in both games, each loaded in the replay DOS build). The commands are the game's (`src/port/sys/cheats.c`); Exhume's `runtime/port/sys/cheat.c` reads, gates, records and replays them. A cheat's time only lets it go: it runs on the game's thread at the main loop's next pass in which the game is on its 3D view with nothing on the cursor and no move pending (`port_cheat_point`, `src/game/MAINLOOP.C`, port only), so a cheat waits out a fade, a level change or a menu.
+
+Cheats are a test's alone. A script with a `cheat` line is refused unless the environment has `EXHUME_TEST_CHEATS=1`, and the web build refuses it always, so that no script passed to a player's build can change its game. Each cheat logs `cheat: TEXT (not as DOS)`. A recording made with cheats in its script is format 6 (Exhume's `runtime/replay/replay.c`): format 5's enhancements chunk, always there, and each cheat where it ran, by the number of the main loop's pass, so its replay runs them again at the same passes and is as exact as any other. Its replay also needs `EXHUME_TEST_CHEATS=1`, which Exhume's `tools/replay.py` sets for a format 6 recording, and DOS never replays one.
+
+A session that uses cheats is a setup session, `tests/replay/setup/NAME/` (`session.script`, `session.rec`, `session.cfg`), made by the port from its script with Exhume's `tools/enhcheck.py setup record NAME` and checked by `enhcheck.py setup check` (its cheats ran, and two replays write the same saved game). Another session names it in `stage_from` (`[replay] stage_from`, or an enhanced session's `stage_from` file) as `setup/NAME`: the saved game it writes is then made by the port's replay of it, in `replay.py golden` and `verify` alike, and the golden keeps that saved game's digests. So a session recorded in DOS can start from it, and DOS still judges what that session does. UW1's `tooheavy` is one ([BUILDING.md](../uw1/docs/BUILDING.md#the-sessions)).
+
 ## Continuous integration
 
 One set of workflows in `.github/` serves both games. They are rendered from Exhume's CI templates with this repository's values in `ci.toml` (`python3 exhume/tools/citemplates.py --vars ci.toml .`), so they are never edited by hand. Each job runs once per game, in that game's folder. A change under `uw1/` runs only UW1's jobs, and likewise `uw2/`; a change to `exhume`, `docs/`, `.github/` or `ci.toml` runs both.

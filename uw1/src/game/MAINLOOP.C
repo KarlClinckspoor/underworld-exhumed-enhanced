@@ -29,6 +29,9 @@ void far mainloop(void)
 {
     while (notdone)
     {
+#ifndef __TURBOC__
+        port_cheat_point();     /* port only: a test's cheats (Exhume's sys/cheat.c), between passes */
+#endif
         if (changed)
             do_changes();
         input_dispatch(inplist);
