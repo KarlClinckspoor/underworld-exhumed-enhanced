@@ -17,7 +17,7 @@ make -C uw1 web                           # uw1/build/web/uw1port.js and .wasm
 make -C uw1 webcheck                      # every recorded session replayed under Node.js
 ```
 
-`make -C uwN web` builds two programs from the same objects: the page's, in `uwN/build/web`, and one for Node.js, in `uwN/build/web-node`. `make -C uwN webcheck` runs every recorded session in the Node.js one against its DOS golden, as `make test` does for the desktop port. It takes minutes.
+`make -C uwN web` builds two programs from the same objects: the page's, in `uwN/build/web`, and one for Node.js, in `uwN/build/web-node`. `make -C uwN webcheck` runs every recorded session in the Node.js one against its DOS golden, as `make test` does for the desktop port. It takes minutes. A setup session made with a test's cheats (`tests/replay/setup/`) is replayed in the desktop build instead (`EXHUME_CHEAT_PORT`), since the web build refuses cheats; the sessions that start from its saved game are replayed in the Node.js one.
 
 The web libraries are built with pthreads on. Anything that links them must also be compiled and linked with `-pthread`, or wasm-ld refuses the link (an object built without threads cannot share memory). `tools/portbuild.py --web` does this for every object.
 

@@ -144,8 +144,8 @@ port-release:
 web:
 	@PATH="$(HOME)/emsdk:$(HOME)/emsdk/upstream/emscripten:$$PATH"; $(PY) tools/portbuild.py --web
 
-webcheck: web
-	@EXHUME_EXIT_AFTER=3600000 EXHUME_PORT=$(CURDIR)/build/web-node/uw2port $(PY) tools/replay.py verify all
+webcheck: web port
+	@EXHUME_EXIT_AFTER=3600000 EXHUME_PORT=$(CURDIR)/build/web-node/uw2port EXHUME_CHEAT_PORT=$(CURDIR)/build/port/uw2port $(PY) tools/replay.py verify all
 
 package:
 	@$(PY) tools/package.py $(PACKAGE_ARGS)
