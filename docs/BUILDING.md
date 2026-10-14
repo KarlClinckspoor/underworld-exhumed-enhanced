@@ -111,6 +111,7 @@ One set of workflows in `.github/` serves both games. They are rendered from Exh
 | `accuracy.yml` | pushes to `main`, pull requests from branches of this repository, and by hand | per game: the gate and `make test` on Ubuntu 24.04; every session against its golden in the port built on Windows and on macOS; the players' Windows zip, unpacked, started with only Windows's own folders on the PATH and replaying every session, on Windows Server 2022 (Exhume's `tools/pkgcheck.py`); and on all three, the MT-32 checks below | yes |
 | `nightly.yml` | 03:17 UTC daily, and by hand | per game: `make test-full` (UW1's with dos-mcp's Chrome, for its js-dos-only `sound` golden); and `make test` against Exhume's latest `master` instead of the pinned submodule (`exhume-master`), so a change in Exhume that would break a game shows within a day. A regenerated golden that differs from the committed one fails the run, and the artifact holds the list, the changed screens and the text diff of each `golden.json` (`golden-diff.txt`, printed in the log too) | yes |
 | `release.yml` | a tag `uw1-v*` or `uw2-v*`, weekly on Mondays, and by hand | that game's packages for macOS, Linux and Windows, each then tested as below; for a tag push, once every test passes, a draft release (a weekly or hand-made run never makes one, even on a tag) | the tests do (Apple's secrets sign and notarise the macOS app) |
+| `site.yml` | a release published (not a prerelease), and by hand | the web build deployed ([WEB.md](WEB.md), "Deploying"): each game's latest published final release built from its own tag, checked, and pushed to the `gh-pages` branch of `abedegno/underworld-exhumed-web` with `WEB_DEPLOY_KEY`; by hand a dry run unless `push` is ticked (`skip_replays` leaves out `make webcheck`) | yes, both, for the game files and the ROMs |
 
 ### The MT-32 checks
 
@@ -133,7 +134,8 @@ The gates and the replays need each game and the Borland toolchain, which cannot
 | --- | --- |
 | `UW1_ASSETS_DEPLOY_KEY`, `UW2_ASSETS_DEPLOY_KEY` | the private half of an ed25519 deploy key that can only read that bundle repository |
 | `UW1_ASSETS_AGE_KEY`, `UW2_ASSETS_AGE_KEY` | the age secret key; the owner keeps it in the macOS Keychain, services `uw1-ci-assets-age` and `uw2-ci-assets-age` |
-| `UW1_CI_ASSETS` (a variable) | `true` turns on UW1's bundle jobs |
+| `UW1_CI_ASSETS` (a variable) | `true` turns on UW1's bundle jobs, and `site.yml` |
+| `WEB_DEPLOY_KEY` | the private half of an ed25519 deploy key with write access to the site repository `abedegno/underworld-exhumed-web` and nothing else (`site.yml`) |
 
 The local actions `.github/actions/uw1-assets` and `uw2-assets` clone the bundle with the deploy key, written to `$RUNNER_TEMP` with mode 600 and deleted once the clone is done. Each game's `tools/ci-assets.sh` then decrypts it into `$RUNNER_TEMP`, with the age key on age's standard input, checks every file against `SHA256SUMS`, and prints only a count.
 
@@ -154,6 +156,8 @@ To make a new bundle (new game files, say):
 4. Commit that one file to the bundle repository in place of the old one.
 
 A new deploy key: `ssh-keygen -t ed25519 -N '' -f deploy`, add `deploy.pub` read-only to the bundle repository, `gh secret set UWn_ASSETS_DEPLOY_KEY < deploy`, then remove the old key and delete both files.
+
+A new deploy key for the site: the same, with `deploy.pub` added to `abedegno/underworld-exhumed-web` with write access, and `gh secret set WEB_DEPLOY_KEY < deploy`. `site.yml` writes it to `$RUNNER_TEMP` with mode 600 only for a push, uses it through `GIT_SSH_COMMAND` with GitHub's host key alone, and deletes it, with the decrypted bundles and the games' trees, in its last step, which always runs.
 
 ## Releases
 
