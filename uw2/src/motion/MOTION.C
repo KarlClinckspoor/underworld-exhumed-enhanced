@@ -616,10 +616,13 @@ unsigned char far full_move(int crossed, int dir)
     register int dz;
 
     if (MP.steps + (dir == -1) > MP.done) {
+        /* 16-bit ints, as Turbo C's (shl ax,5, and neg, before the cwd): zspeed passes 1024
+           when the fall is fast and the major axis slow, and then z wraps and the whole step
+           goes the wrong way, where the host's int kept 32 bits */
         if (dir * MP.step[2] > 0)
-            z = MP.zspeed << 5;
+            z = (int16)(MP.zspeed << 5);
         else
-            z = -(MP.zspeed << 5);
+            z = (int16)-(MP.zspeed << 5);
     } else if (MP.rem != 0) {
         z = MP.rem;
         z = z * (dir * (MP.step[2] / 0x800) * MP.zspeed);
