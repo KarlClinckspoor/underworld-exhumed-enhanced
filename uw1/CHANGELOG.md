@@ -2,7 +2,7 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw1-vX.Y.Z`.
 
-## 1.0.2 (unreleased)
+## 1.0.2 (14 October 2026)
 
 - **Fixed:** creating a female character crashed the game on choosing any portrait but the first (issue 8). DOS draws her; the port now does too.
 - **Fixed:** opening the map could crash the game on a Mac with Apple silicon, and was one byte from doing so on other systems, on a level whose notes were all erased before a new level was first saved: the original game then reads that level's notes from another level's map, and one of those "notes" had no end (issue 7). The port now cuts such a note short; what the map shows is unchanged.
