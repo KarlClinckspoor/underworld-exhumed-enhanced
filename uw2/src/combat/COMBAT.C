@@ -638,6 +638,18 @@ void far DoPlayerWeapon(register unsigned char *wd, struct Object far *weap, int
     if (weap != 0) {
         decode_obj_spell(weap, &major, &effect, &flag);
         if (!flag && major == 0xC) {
+#ifndef __TURBOC__
+            /* port only: --enhance true-enchants (docs/ENHANCEMENTS.md). The game names
+               effects 0..3 with spell strings 0x1C0..0x1C3, the Accuracy enchantments (Minor,
+               Major, Great, Unsurpassed: obj/LOOK.C's do_of), and 4..7 with 0x1C4..0x1C7, the
+               Damage ones, but adds 0..3 to the damage and 4..7 to the chance to hit. Flipping
+               bit 2 of the effect swaps the halves, and the arithmetic below then gives each
+               name its own bonus with the same strength: Accuracy effect e adds 2e + 1 to hit
+               (as 4 + e did, 2(4 + e) - 7), Damage effect 4 + e adds 2e + 1 damage (as e did).
+               Special weapons (8 and up) are left alone */
+            if (ENHANCED(ENH_TRUE_ENCHANTS) && effect < 8)
+                effect ^= 4;
+#endif
             if (effect < 8) {
                 if (effect < 4)
                     damage += effect * 2 + 1;

@@ -21,4 +21,7 @@ const struct enhance_flag enhance_table[ENH_COUNT] = {
     { "rune-keys", "Ctrl+Alt+letter picks a rune you have, Ctrl+Alt+Backspace clears, Ctrl+Alt+Space casts", ENH_PRESENTATION, UH, NULL },
     { "tidy-objects", "A stack too heavy to take part of no longer loses an object slot, and lost slots are freed on arrival", ENH_GAMEPLAY, NULL, "UW1" },
     { "restore-at-rest", "A restored game starts at rest, without the motion or fall it was restored in", ENH_GAMEPLAY, NULL, NULL },
+    /* UW2 adds a weapon's Accuracy enchantment to the damage and its Damage enchantment to the
+       chance to hit (combat/COMBAT.C's DoPlayerWeapon); this swaps them back. UW1's work as named */
+    { "true-enchants", "A weapon's Accuracy enchantment adds to hit and its Damage enchantment adds damage, as named (the original swaps them)", ENH_GAMEPLAY, NULL, NULL },
 };
