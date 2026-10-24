@@ -2,6 +2,10 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw2-vX.Y.Z` (before the move to Underworld Exhumed, `vX.Y.Z`).
 
+## Unreleased
+
+- **New:** optional enhancement plain-debris (`--enhance plain-debris`). An enchanted object that breaks loses its spell. Before, the debris it left kept the spell, so an enchanted scroll thrown at a wall until it broke gave debris that cast the spell every time it was used, for ever.
+
 ## 1.2.3 (14 October 2026)
 
 - **Fixed:** creating a female character crashed the game on choosing any portrait but the first (UW1's issue 8, which UW2 shares). DOS draws her; the port now does too.

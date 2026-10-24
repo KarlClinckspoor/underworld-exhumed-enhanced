@@ -2,6 +2,10 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw1-vX.Y.Z`.
 
+## Unreleased
+
+- **New:** optional enhancement plain-debris (`--enhance plain-debris`). An enchanted object that breaks loses its spell. Before, the debris it left kept the spell, so an enchanted scroll thrown at a wall until it broke gave debris that cast the spell every time it was used, for ever.
+
 ## 1.0.2 (14 October 2026)
 
 - **Fixed:** creating a female character crashed the game on choosing any portrait but the first (issue 8). DOS draws her; the port now does too.
