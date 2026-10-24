@@ -32,6 +32,9 @@ A value in the settings file that the screen cannot show (`volume=abc`, `scale=9
 | Speech | The speech card: None, Sound Blaster, Sound Blaster Pro, Pro Audio Spectrum | none (`DATA\UW.CFG`) | next start | `--sound MUSIC[,SPEECH]` (kept) |
 | MT-32 ROMs | The folder with your MT-32 or CM-32L ROM images, for the Roland MT-32 music. The row says "found" when the port has ROMs to use (the folder it started with, from the option, the variable, this setting or its own search, or a folder you have just chosen) and "not found" when it has none. Choosing the row opens the folder picker; a folder with no such ROMs is refused | `mt32-roms` | next start | `--mt32-roms PATH` (kept) |
 | Volume | Everything the sound cards play, 0 to 100 in steps of 10 | `volume` | at once | none |
+| Replacement music | UW1: your own Ogg Vorbis files play in place of the game's music themes ([MUSIC.md](MUSIC.md)); off, the game's music everywhere | `music-replace` | at once | none |
+| Music folder | UW1: the folder of those files (default `music` in the home folder); the row says how many of the 13 themes it has a file for. Not on the web | `music-dir` | at once | none |
+| Replacement volume | UW1: the files' volume, 0 to 100 in steps of 10 (default 70); Volume still scales everything | `music-volume` | at once | none |
 
 The card numbers on the command line are in each port's `--help`. Choosing a card here or with `--sound` also stops the port from picking the card by itself on later starts.
 

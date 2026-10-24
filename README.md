@@ -39,7 +39,7 @@ The first run gets a Sound Blaster with FM music and digitised speech or effects
 
 **If something goes wrong,** [open an issue](https://github.com/abedegno/underworld-exhumed/issues/new/choose). Each play session's inputs are recorded to `recordings/` in the home folder (the newest five are kept). Zip the newest folder with the log beside it and attach it: it replays your session here exactly.
 
-Optional enhancements, all off by default, are listed in [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
+Optional enhancements, all off by default, are listed in [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md). *Ultima Underworld*'s port can also play your own Ogg Vorbis music files in place of the game's themes: [docs/MUSIC.md](docs/MUSIC.md).
 
 ### In a browser
 

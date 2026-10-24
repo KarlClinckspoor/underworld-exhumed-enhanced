@@ -129,7 +129,7 @@ jobs:
       - name: Build libmt32emu (when not cached), fetch Nuked OPL3
         run: |
           SETUP_LIBS=mt32emu sh exhume/tools/setup-libs.sh uw1/tools/libs
-          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - run: make -C uw1 PY=python port
       - name: The sessions against the goldens
         run: |
@@ -208,7 +208,7 @@ jobs:
       - name: Build libmt32emu (when not cached), fetch Nuked OPL3
         run: |
           SETUP_LIBS=mt32emu sh exhume/tools/setup-libs.sh uw1/tools/libs
-          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - name: The players' package, unpacked, started and replayed
         run: |
           set -o pipefail
@@ -248,7 +248,7 @@ jobs:
         with:
           deploy-key: ${{ secrets.UW1_ASSETS_DEPLOY_KEY }}
           age-key: ${{ secrets.UW1_ASSETS_AGE_KEY }}
-      - run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+      - run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - run: make -C uw1 port
       - name: The sessions against the goldens
         run: |

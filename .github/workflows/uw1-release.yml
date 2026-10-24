@@ -53,7 +53,7 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: "11.0"
         run: |
           sh exhume/tools/setup-libs.sh uw1/tools/libs
-          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - name: Build
         env:
           MACOSX_DEPLOYMENT_TARGET: "11.0"
@@ -186,7 +186,7 @@ jobs:
       - name: Build SDL3 and libmt32emu, fetch Nuked OPL3
         run: |
           sh exhume/tools/setup-libs.sh uw1/tools/libs
-          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - name: Build
         run: make -C uw1 port-release
       # appimagetool and the AppImage runtime it embeds, at pinned releases, checked against
@@ -287,7 +287,7 @@ jobs:
       - name: Build libmt32emu (MSYS2 has no package of it), fetch Nuked OPL3
         run: |
           SETUP_LIBS=mt32emu sh exhume/tools/setup-libs.sh uw1/tools/libs
-          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+          sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - name: Build
         run: make -C uw1 PY=python port-release
       - name: Package

@@ -58,6 +58,11 @@
 #include "sys.h"
 #include "ui.h"
 #include "file.h"
+#ifndef __TURBOC__
+/* port only: replacement music (Exhume's runtime/port/sound/altmusic.h, which game sources do not
+   see: declared here, as this file declares other routines it calls) */
+void altmusic_theme(const char *name, const char *fallback);
+#endif
 #include "gfx.h"
 #include "sound.h"
 
@@ -339,6 +344,21 @@ unsigned char far load_new_music(unsigned char music, char start)
              t = SND_READ(music_driver, AIL_timbre_request(music_driver, xmi_sequence)))
             if (!install_timbre(t >> 8, t & 0xFF))
                 goto fail;
+#ifndef __TURBOC__
+        {
+            /* port only: replacement music (Exhume's sound/altmusic.c; docs/MUSIC.md). The theme just
+               loaded is named by its file: the player's NAME.ogg plays in its place from the
+               sequence's start below, if there is one. The name is the one loaded ("aw02" on the FM
+               cards, "uw02" on the MT-32), else the other card's, so that one file serves both.
+               Nothing of the game changes: its sequence still plays, only unheard. */
+            char stem[5], other[5];
+            memcpy(stem, name, 4);
+            stem[4] = 0;
+            memcpy(other, stem, 5);
+            other[0] = stem[0] == 'a' ? 'u' : 'a';
+            altmusic_theme(stem, other);
+        }
+#endif
     }
     if (start) {
         AIL_start_sequence(music_driver, xmi_sequence);

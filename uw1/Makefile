@@ -18,7 +18,8 @@
 #                      toolchain, DOS or game data (Exhume's tools/setup-port.sh)
 #   make setup-libs    build SDL3 and libmt32emu from source into tools/libs, where no package
 #                      has them (Linux; tools/setup-libs.sh)
-#   make setup-sound   fetch the OPL emulator, Nuked OPL3, into tools/nuked-opl3
+#   make setup-sound   fetch the OPL emulator, Nuked OPL3, into tools/nuked-opl3, and the
+#                      replacement music's Ogg Vorbis decoder, stb_vorbis, into tools/stb-vorbis
 #   make port-check    compile the game's C for the host, compile only
 #   make port          build and link the port; make port-debug the UBSan build
 #   make port-release  the build the players' packages are made from (PORT_ARCHS="--arch arm64
@@ -104,13 +105,13 @@ setup-exhume:
 	  else echo "Exhume: cloned into .exhume at its default branch (no tools/exhume-ref)"; fi; fi
 
 setup-port: setup-exhume
-	@sh $(EXHUME)/tools/setup-port.sh tools/libs tools/nuked-opl3
+	@sh $(EXHUME)/tools/setup-port.sh tools/libs tools/nuked-opl3 tools/stb-vorbis
 
 setup-libs:
 	@sh $(EXHUME)/tools/setup-libs.sh tools/libs
 
 setup-sound:
-	@sh $(EXHUME)/tools/setup-sound.sh tools/nuked-opl3
+	@sh $(EXHUME)/tools/setup-sound.sh tools/nuked-opl3 tools/stb-vorbis
 
 port-check:
 	@$(PORT)/portcheck.py --config exhume.toml

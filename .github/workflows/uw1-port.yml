@@ -52,7 +52,7 @@ jobs:
         run: |
           sh exhume/tools/setup-libs.sh uw1/tools/libs
           echo "PKG_CONFIG_PATH=$PWD/uw1/tools/libs/lib/pkgconfig" >> "$GITHUB_ENV"
-          PKG_CONFIG_PATH=$PWD/uw1/tools/libs/lib/pkgconfig sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+          PKG_CONFIG_PATH=$PWD/uw1/tools/libs/lib/pkgconfig sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - run: make -C uw1 port
       - run: make -C uw1 port-check
 
@@ -84,7 +84,7 @@ jobs:
           . ~/emsdk/emsdk_env.sh >/dev/null 2>&1
           SETUP_WEB=1 sh exhume/tools/setup-libs.sh uw1/tools/libs-web
       - name: Fetch Nuked OPL3 (the web build has the FM music as the desktop one does)
-        run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+        run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - run: make -C uw1 web
 
   macos:
@@ -100,7 +100,7 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE: "1"
           HOMEBREW_NO_INSTALL_CLEANUP: "1"
         run: brew install sdl3 mt32emu pkgconf
-      - run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+      - run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - run: make -C uw1 port
       - run: make -C uw1 port-check
 
@@ -126,6 +126,6 @@ jobs:
           update: false
           install: make curl
           pacboy: clang:p llvm:p pkgconf:p sdl3:p python:p
-      - run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3
+      - run: sh exhume/tools/setup-sound.sh uw1/tools/nuked-opl3 uw1/tools/stb-vorbis
       - run: make -C uw1 PY=python port
       - run: make -C uw1 PY=python port-check

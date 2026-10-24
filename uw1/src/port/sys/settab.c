@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "port.h"
 #include "plat.h"
 #include "sound/audio.h"
 #include "sound/mt32roms.h"
+#include "sound/altmusic.h"
 #include "ui/settings.h"
 
 void mouse_look_speed(int pct);             /* mousedrv.c */
@@ -30,7 +32,7 @@ extern const char *port_home;
 #endif
 
 /* The rows, in each tab's order; the display rows read each other's values */
-enum { R_MUSIC, R_SPEECH, R_ROMS, R_VOLUME, R_MOUSE, R_LOOK, R_FULL, R_SCALE, R_ASPECT, R_INTEGER, R_FOLDER, R_RECORD, R_START };
+enum { R_MUSIC, R_SPEECH, R_ROMS, R_VOLUME, R_REPLACE, R_REPLACE_DIR, R_REPLACE_VOL, R_MOUSE, R_LOOK, R_FULL, R_SCALE, R_ASPECT, R_INTEGER, R_FOLDER, R_RECORD, R_START };
 
 /* Window scale offers only the scales whose window fits the display (with 4:3 as it stands) */
 static int scale_limit(void)
@@ -131,6 +133,53 @@ static const char *roms_show(const char *path)
 }
 static int game_check(const char *path) { return port_game_dir_ok(path); }
 
+/* Replacement music (Exhume's sound/altmusic.c; docs/MUSIC.md): the player's Ogg Vorbis files, one a
+   theme, played in place of the game's music. The themes are named by their music files,
+   SOUND\UWnn.XMI (nn two octal digits: themes 1 to 13, uw01 to uw15), so a file is uwnn.ogg; the
+   FM cards' own arrangements, AWnn.XMI, take awnn.ogg first when there is one (SOUND.C's
+   load_new_music). The folder is the Music folder row's, or by default a folder called music in
+   the home folder; the row shows how many of the themes it has a file for. */
+static const char *const uw1_themes[] = { "uw01", "uw02", "uw03", "uw04", "uw05", "uw06", "uw07",
+                                          "uw10", "uw11", "uw12", "uw13", "uw14", "uw15" };
+static const char *const uw1_fm_themes[] = { "aw01", "aw02", "aw03", "aw04", "aw05", "aw06", "aw07",
+                                             "aw10", "aw11", "aw12", "aw13", "aw14", "aw15" };
+#define NTHEMES ((int)(sizeof uw1_themes / sizeof uw1_themes[0]))
+
+/* The folder the files are looked for in: the row's, or the home folder's music */
+static const char *music_folder(const char *path)
+{
+    static char def[1100];
+    if (path && *path) return path;
+    snprintf(def, sizeof def, "%s/music", port_home ? port_home : ".");
+    return def;
+}
+
+/* Any folder is taken (the row then says how many themes it has): the music plays from it at the
+   next theme the game starts */
+static int music_check(const char *path)
+{
+    altmusic_set_dir(music_folder(path));
+    return 0;
+}
+
+/* "N of 13 themes" (a theme counts by either of its names): counted again when the folder shown
+   changes, or two seconds after the last count, as the screen draws it every frame and the player
+   may copy files in while it is open */
+static const char *music_show(const char *path)
+{
+    static char last[1100] = "\001", word[40];
+    static time_t when;
+    const char *d = music_folder(path);
+    int n;
+    if (!strcmp(last, d) && time(NULL) - when < 2) return word;
+    snprintf(last, sizeof last, "%s", d);
+    when = time(NULL);
+    if (!altmusic_available()) snprintf(word, sizeof word, "not in this build");
+    else if ((n = altmusic_count(d)) > 0) snprintf(word, sizeof word, "%d of %d themes", n, NTHEMES);
+    else snprintf(word, sizeof word, "%s", *path ? "no themes found" : "none (home/music)");
+    return word;
+}
+
 static const char *const mouse_names[] = { "Follow", "Lock", NULL };
 static const char *const mouse_stored[] = { "follow", "lock", NULL };
 
@@ -144,6 +193,13 @@ const struct setting port_settings[] = {
                     .show = roms_show },
     [R_VOLUME]  = { .tab = SET_TAB_SOUND, .label = "Volume", .kind = SET_SLIDER, .key = "volume", .lo = 0, .hi = 100, .step = 10,
                     .def = 100, .apply = audio_set_volume },
+    /* replacement music: off by the switch, or with no files; the volume is the files' alone */
+    [R_REPLACE] = { .tab = WEB_HIDDEN(SET_TAB_SOUND), .label = "Replacement music", .kind = SET_BOOL, .key = "music-replace",
+                    .def = 1, .apply = altmusic_set_enabled },
+    [R_REPLACE_DIR] = { .tab = WEB_HIDDEN(SET_TAB_SOUND), .label = "Music folder", .kind = SET_FOLDER, .key = "music-dir",
+                    .check = music_check, .show = music_show },
+    [R_REPLACE_VOL] = { .tab = WEB_HIDDEN(SET_TAB_SOUND), .label = "Replacement volume", .kind = SET_SLIDER, .key = "music-volume",
+                    .lo = 0, .hi = 100, .step = 10, .def = 70, .apply = altmusic_set_volume },
     [R_MOUSE]   = { .tab = SET_TAB_CONTROLS, .label = "Mouse", .kind = SET_CYCLE, .key = "mouse", .names = mouse_names,
                     .stored = mouse_stored, .def = 0, .apply = apply_mouse },
     [R_LOOK]    = { .tab = SET_TAB_CONTROLS, .label = "Mouse-look speed", .kind = SET_SLIDER, .key = "look-speed", .lo = 10,
@@ -202,6 +258,15 @@ void port_settings_start(int *fullscreen, int *scale, int *aspect, int *integer_
     if (aspect) *aspect = settings_value(R_ASPECT);
     if (integer_scale) *integer_scale = settings_value(R_INTEGER);
     audio_set_volume(settings_value(R_VOLUME));
+    {
+        /* replacement music: the game's theme names, the folder (the file's, else home/music), on
+           or off and the volume, as the screen read them */
+        char dir[1024];
+        altmusic_set_themes(uw1_themes, uw1_fm_themes, NTHEMES);
+        altmusic_set_dir(music_folder(port_home && port_config_get(port_home, "music-dir", dir, sizeof dir) == 0 ? dir : NULL));
+        altmusic_set_enabled(settings_value(R_REPLACE));
+        altmusic_set_volume(settings_value(R_REPLACE_VOL));
+    }
     mouse_look_speed(settings_value(R_LOOK));
 }
 

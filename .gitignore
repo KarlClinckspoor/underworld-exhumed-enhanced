@@ -10,6 +10,7 @@ node_modules/
 tools/emu2/
 tools/libs/
 tools/nuked-opl3/
+tools/stb-vorbis/
 .exhume/
 
 # superpowers plan workspaces (ledgers, test logs): local only

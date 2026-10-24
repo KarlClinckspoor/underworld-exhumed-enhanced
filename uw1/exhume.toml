@@ -102,6 +102,19 @@ define = "AUDIO_HAVE_OPL"
 for = "sound/audio.c"
 missing = "no OPL emulator (make setup-sound)"
 
+[[port.vendor]]
+# stb_vorbis (Sean Barrett, public domain or MIT), the Ogg Vorbis decoder of the replacement music
+# (Exhume's runtime/port/sound/altmusic.c; docs/MUSIC.md): fetched by the same tools/setup-sound.sh
+# into tools/stb-vorbis, never committed, as the repository holds no third-party source; without
+# it the port builds with no replacement music
+name = "stb_vorbis"
+dir = "tools/stb-vorbis"
+sources = ["stb_vorbis.c"]
+define = "AUDIO_HAVE_VORBIS"
+for = "sound/altmusic.c"
+libs = ["-lm"]                          # its decoder uses the C library's maths functions
+missing = "no Ogg Vorbis decoder for replacement music (make setup-sound)"
+
 [[port.pkg]]
 # libmt32emu (munt, LGPL-2.1-or-later), the MT-32's emulator, linked dynamically when pkg-config
 # finds it

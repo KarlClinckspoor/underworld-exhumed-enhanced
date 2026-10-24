@@ -2,6 +2,10 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw1-vX.Y.Z`.
 
+## Unreleased
+
+- **New:** replacement music ([MUSIC.md](../docs/MUSIC.md)). Put Ogg Vorbis files named after the game's themes (`uw02.ogg` for the first walking theme, and so on) in a `music` folder in the home folder, or choose a folder on the settings screen's Sound tab, and they play in place of the game's music; themes without a file play the game's own. The game's music still runs unheard underneath, so its timing and your recordings are unchanged, and the sound effects are still heard. Not on the web page.
+
 ## 1.0.2 (14 October 2026)
 
 - **Fixed:** creating a female character crashed the game on choosing any portrait but the first (issue 8). DOS draws her; the port now does too.
