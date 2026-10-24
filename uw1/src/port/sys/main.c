@@ -550,6 +550,42 @@ int main(int argc, char *argv[])
                         cl_integer ? NULL : &cfg.integer_scale);
     port_settings_roms(roms);
     port_settings_seed(cfg.fullscreen, cfg.scale, cfg.aspect, cfg.integer_scale, cfg.mouse_lock);
+    {
+        /* The player's live cheats (cheattab.c, docs/CHEATS.md). The Cheats screen is the settings
+           screen's screen 1, opened by the Game tab's "Cheats..." row (settab.c's .opens = 1). Its
+           rows, and the Game tab's master switch, post each change to the runtime (cheat_post,
+           cheat_act), which carries it out on the game's thread and records it. */
+        extern const struct setting cheat_rows[];
+        extern const int cheat_rows_count, cheat_tabs_count;
+        extern const char *const cheat_tabs[];
+        int k;
+        if (settings_add_screen("Cheats", cheat_tabs, cheat_tabs_count, cheat_rows, cheat_rows_count) != 1)
+            fprintf(stderr, "uw1port: settings: no room for the Cheats screen\n");
+        /* each live row must say what its cheat says: the same default (settings_post_live
+           posts only values that differ from the row's default) and the same range (cheat_post
+           drops a value outside the cheat's), or the screen and the game would disagree */
+        for (k = 0; k < port_settings_count + cheat_rows_count; k++) {
+            const struct setting *s = k < port_settings_count ? &port_settings[k] : &cheat_rows[k - port_settings_count];
+            const struct cheat_live *c = s->live ? cheat_game_live(s->live - 1) : NULL;
+            int lo = s->kind == SET_SLIDER ? s->lo : 0;
+            int hi = s->kind == SET_SLIDER ? s->hi : 1;     /* a bool's (the only other kind used) */
+            if (s->live && (!c || c->def != s->def || c->lo != lo || c->hi != hi))
+                fprintf(stderr, "uw1port: cheats: the row %s does not match its cheat's default or range (cheattab.c)\n", s->label);
+        }
+        settings_live_hook = cheat_post;
+        settings_act_hook = cheat_act;
+        if (replay) {
+            /* a replay plays its recording's cheats alone, from all neutral: the settings file's
+               are not posted, and the screen shows the rows without letting them change */
+            cheat_replay_mode();
+            settings_lock_live("A replay plays the cheats its recording holds: these cannot change");
+        } else {
+            /* any other run starts with the settings file's cheats, posted as if just set on the
+               screen, so that the game plays what the screen shows and its recording holds them
+               (a test's fresh home has none; its script's cfg lines set them) */
+            settings_post_live();
+        }
+    }
     pit_start();
     memset(&hooks, 0, sizeof hooks);
     hooks.scanout = vga_scanout;

@@ -84,6 +84,13 @@ enum { ENH_SKIP_INTRO, ENH_WRAP_MENU, ENH_FAST_PANELS, ENH_FREE_HEADING, ENH_SUB
        ENH_WIDE_PITCH, ENH_MOUSE_LOOK, ENH_INVERT_LOOK, ENH_MODERN_KEYS, ENH_RUNE_KEYS,
        ENH_TIDY_OBJECTS, ENH_RESTORE_AT_REST,
        ENH_COUNT };
+/* The player's live cheats (Exhume's runtime/port/sys/cheat.h; src/port/sys/cheattab.c, the
+   Cheats screen): indices into cheat_live_table, read on the game's thread with cheat_live(CH_...).
+   CH_ON must stay 0: the runtime treats entry 0 as the master switch, and while it is off every
+   other entry reads as its neutral default. New cheats go before CH_COUNT; their names, not
+   their numbers, are what a recording keeps, so the order may change. */
+enum { CH_ON, CH_MAP_TELEPORT,
+       CH_COUNT };
 /* --enhance modern-keys: the key code a lone left Shift gives (ui/MOUSE.C), unused by the game */
 #define PORT_KEY_LSHIFT 0xBF
 int port_pitch_bound(void);                 /* game/PLAYER.C: the pitch's bound either way */

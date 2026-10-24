@@ -120,6 +120,8 @@ static int16 map_mouse;
    current level's map and shows it, and adds the mouse handler (map_mouse). */
 #ifndef __TURBOC__
 void far port_map_key(int how);
+void far port_map_teleport(void);       /* the player's Ctrl+T cheat, at the end of this file */
+static char teleport_key;               /* Ctrl+T is registered (once, as the keys above are) */
 #endif
 
 void far AutoMap(void)
@@ -135,6 +137,20 @@ void far AutoMap(void)
 #endif
         registered = 1;
     }
+#ifndef __TURBOC__
+    /* port only: the player's Ctrl+T cheat (port_map_teleport). Registered the first time the map
+       opens with the cheat on, and never before: each entry grows the game's key table (INPUT.C's
+       _input_addkey reallocates it), so a session that never turns the cheat on keeps the
+       original's table exactly, as the sessions checked against DOS's need. Once registered it
+       stays, as the game's own keys do, and port_map_teleport tests the cheat again each time, so
+       turning it off still works. */
+    if (!teleport_key && cheat_live(CH_MAP_TELEPORT)) {
+        _input_addkey(KEY_CTRL | 't', 0, MODE_MAP, (InputFn)port_map_teleport);
+        /* with Caps Lock on, MOUSE.C's do_keyboard_input gives the letter in capitals */
+        _input_addkey(KEY_CTRL | 'T', 0, MODE_MAP, (InputFn)port_map_teleport);
+        teleport_key = 1;
+    }
+#endif
     set_new_music(MUSIC_MAPS);
     change_music_maybe();
     SaveAutoMapLevel(0, PlayerLevel);
@@ -708,5 +724,70 @@ void far port_map_key(int how)
         ChangeAutoMapLevel(level - 1);
     else if (how == 2 && level != PlayerLevel)
         ChangeAutoMapLevel(PlayerLevel);
+}
+
+/* The player's map-teleport cheat (src/port/sys/cheattab.c's CH_MAP_TELEPORT; docs/CHEATS.md):
+   Ctrl+T on the map leaves the map and moves the player to the square under the pointer, on the
+   level the map shows. Everything goes through the game's own routines, as the test's "goto"
+   cheat does (src/port/sys/cheats.c), so the state it leaves is one the game could reach itself:
+
+   1. Where the pointer points. ManageDungeonMap reads a click at (inplist->x - 0x16,
+      inplist->y - 7), the pen cursor's point, and writes a note there, so that is the point
+      the player sees as "here". The map's region starts at (0, 0), so inplist's position is the
+      pointer's own, which mouse_getxy gives a key handler. y counts up from the bottom of the
+      screen in this engine (the mouse and the drawing alike: set_the_window's top is 0xC7), so the
+      map needs no flip. DoTile draws tile (tx, ty) in the three pixels from (tx - 1) * 3 + 10 and
+      (ty - 1) * 3 + 7; turned round, tx = (x - 10) / 3 + 1 and ty = (y - 7) / 3 + 1. The map
+      holds tiles 1 to 62 (ShowDungeonMap's loops); a point outside them is refused.
+   2. Which level. The one the map shows (level), 1 to 8: ChangeAutoMapLevel loads another level's
+      map only below 9 (its arrows step on to 99, showing nothing), and level 9, the Ethereal Void,
+      is left out, as the map leaves out the player's marker there. On another level the destination is
+      not loaded until the move, and new_player_pos kills a player it cannot place there; so on
+      another level only a square the player has seen is taken (its PlayersMap type 1 to 9, as
+      ShowDungeonMap draws them). On the player's own level do_teleport looks for room itself.
+   3. The move. do_teleport (event/WORLDEV.C) checks this level's square and finds room near it,
+      and records the move (NewPlayerLevel, NewPlayerX, NewPlayerY). Then newscr(MODE_GAME) leaves
+      the map as Esc does (ExitAutoMap saves the notes and reloads the player's own level's map if
+      another was shown), and editchng(8) asks for the 3D view's change handler 3, new_player_pos,
+      which carries the move out on the next pass: the fade, ChangeLevel for another level, the
+      placing, as after a teleport trap.
+   Anything refused beeps, as the map does when a note will not fit, and leaves the map open. */
+void far port_map_teleport(void)
+{
+    int16 x, y;
+    int tx, ty, type;
+
+    if (!cheat_live(CH_MAP_TELEPORT))   /* turned off (or the master switch) since it was registered */
+        return;
+    /* a living player with no move already pending (as the test cheat's cheat_ready asks), and a
+       level with a map */
+    if (ThePlayer == 0 || ThePlayer->hp == 0 || NewPlayerX != 0 || level < 1 || level > 8) {
+        do_beep(0x12C, 0xA);
+        return;
+    }
+    mouse_getxy(&x, &y);
+    x -= 0x16;                          /* the pen's point, as ManageDungeonMap's mx, my */
+    y -= 7;
+    if (x < 10 || y < 7) {              /* left of or below tile 1 (and no negative division) */
+        do_beep(0x12C, 0xA);
+        return;
+    }
+    tx = (x - 10) / 3 + 1;
+    ty = (y - 7) / 3 + 1;
+    if (tx > 0x3E || ty > 0x3E) {
+        do_beep(0x12C, 0xA);
+        return;
+    }
+    type = PlayersMap[ty][tx] & 0xF;    /* the map of the level shown (ChangeAutoMapLevel loaded it) */
+    if (level != PlayerLevel && (type <= 0 || type >= 10)) {
+        do_beep(0x12C, 0xA);
+        return;
+    }
+    if (do_teleport(ThePlayer, tx, ty, level) != 0x10) {   /* no room near it on this level */
+        do_beep(0x12C, 0xA);
+        return;
+    }
+    newscr(MODE_GAME);
+    editchng(8);
 }
 #endif

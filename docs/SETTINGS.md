@@ -14,7 +14,7 @@ The first time you run a port, and on every start after that unless you turn it 
 | Left, Right | change the row's value (on the tab bar: the previous or next tab) |
 | Enter | change the row's value (a switch flips, a list goes to the next choice, a folder row opens your system's folder picker) |
 | Tab | the next tab |
-| F11 (Cmd+, on macOS), Esc | close the screen |
+| F11 (Cmd+, on macOS), Esc | close the screen (on the Cheats screen, Esc goes back to the Game tab and F11 closes) |
 
 The mouse works too: click a tab, click a row to change it, drag a slider (Volume, Mouse-look speed).
 
@@ -66,6 +66,8 @@ One switch for each enhancement the game has, all off by default. The selected o
 | Game folder | The folder holding your copy of the game. A folder that is not the game is refused and the old one stays | `data` | next start | `--data DIR` (kept) |
 | Record sessions | Each session's inputs go to `recordings/` in the home folder (the newest five are kept), so a crash can be replayed | `recording` | next start | `--no-recording` (this run only) |
 | Show this at start | Opens this screen before the game starts | `settings-at-start` | next start | none |
+| Cheats | UW1: the master switch of the player's cheats ([CHEATS.md](CHEATS.md)); off, the game plays as the original | `cheats` | when the screen closes | none |
+| Cheats... | UW1: opens the Cheats screen, a screen of its own with a tab for each kind of cheat; Esc comes back here ([CHEATS.md](CHEATS.md)) | none (each cheat has its own `cheat-NAME` key) | when the screen closes | none |
 
 ## The command line and the file
 
