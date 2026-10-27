@@ -1,6 +1,6 @@
 # Cheats
 
-*Ultima Underworld*'s port (UW1 only, for now) has cheats of its own, for players: changes to the game that you turn on and set while you play, on the **Cheats** screen. They are all off until you turn them on, and with them off the game plays exactly as the original. They are not the [test cheats](BUILDING.md#cheats-for-tests) that input scripts use, which a player's build refuses.
+Both ports, *Ultima Underworld*'s and *Ultima Underworld II*'s, have cheats of their own, for players: changes to the game that you turn on and set while you play, on the **Cheats** screen. They are all off until you turn them on, and with them off the game plays exactly as the original. They are not the [test cheats](BUILDING.md#cheats-for-tests) that input scripts use, which a player's build refuses.
 
 ## Turning them on
 
@@ -19,12 +19,14 @@ The game is paused while the settings screen is open, so a change takes effect w
 
 | Cheat | What it does | Settings-file key | Default |
 |---|---|---|---|
-| Ctrl+T map teleport | On the map, Ctrl+T leaves the map and puts you on the square under the pointer, on the level the map shows (levels 1 to 8; use the map's arrows to show another level). Turned on, it works from the next time the map opens | `cheat-map-teleport` | off |
-| Ctrl+M map fill | On the map, Ctrl+M fills in the map of the level the map shows (levels 1 to 8), as if you had seen all of it, and draws it again at once. Turned on, it works from the next time the map opens | `cheat-map-fill` | off |
+| Ctrl+T map teleport | On the map, Ctrl+T leaves the map and puts you on the square under the pointer, on the level the map shows (use the map's arrows, and in UW2 its gem, to show another level). Turned on, it works from the next time the map opens | `cheat-map-teleport` | off |
+| Ctrl+M map fill | On the map, Ctrl+M fills in the map of the level the map shows, as if you had seen all of it, and draws it again at once. Turned on, it works from the next time the map opens | `cheat-map-fill` | off |
 
-The point that counts is the pen's point, where a note would be written. On your own level, a square with no room for you (a wall, a crowd) moves you to the nearest square that has room, as a teleport trap does, and one with no room near it is refused. On another level, only a square you have seen is taken: that level is not loaded until you arrive, and the game kills a player it cannot place there. A refused square beeps and leaves the map open. The move itself is the game's own teleport, with its fade.
+The point that counts is the pen's point, where a note would be written. On your own level, a square with no room for you (a wall, a crowd) moves you to the nearest square that has room, as a teleport trap does, and one with no room near it is refused. On another level, only a square you have seen is taken: that level is not loaded until you arrive, and the game kills a player it cannot place there. A refused square leaves the map open (UW1 beeps; UW2's map has no sound for it). The move itself is the game's own teleport, with its fade, and in UW2 its rules too: not while asleep in the void, and leaving the jail cell or your part of the Pits' arena counts as escaping or running away, as with any teleport.
 
-Ctrl+M fills in every square that is not solid rock, each as the 3D view marks a square it has seen in the light: its shape, water and lava shaded, and the marks of its doors, bridges and stairs (secret doors included, as seeing one marks it). Squares you have already seen are left as you saw them, and your notes stay. Your own level is filled from the level as it is now; another level from the game in progress as you last left it (or as it starts, if you have never been there). The filled map is kept as a map you drew is, in the game in progress and in the games you save. Two things to know: a filled square no longer counts as new when you first walk past it, so it gives none of the small experience the game awards for exploring; and the map's drawing takes random numbers, as it always does, so a game with a fill plays on differently from one without.
+The levels each game takes: UW1's 1 to 8 (not the Ethereal Void, which has no map); UW2's levels of every world, 1 to 70, and of those only the ones that exist (a world has fewer than eight levels; the numbers from 71 on are the map scraps' slots, not places).
+
+Ctrl+M fills in every square that is not solid rock, each as the 3D view marks a square it has seen in the light: its shape, water and lava (and in UW2 ice) shaded, and the marks of its doors, bridges and stairs (secret doors included, as seeing one marks it). Squares you have already seen are left as you saw them, and your notes stay. Your own level is filled from the level as it is now; another level from the game in progress as you last left it (or as it starts, if you have never been there). The filled map is kept as a map you drew is, in the game in progress and in the games you save. Two things to know: a filled square no longer counts as new when you first walk past it, so it gives none of the small experience the game awards for exploring (nor, in UW2, the experience a map scrap gives for squares it adds); and the map's drawing takes random numbers, as it always does, so a game with a fill plays on differently from one without.
 
 ## Recordings and replays
 
@@ -52,7 +54,7 @@ The name is the cheat's (`src/port/sys/cheattab.c`), and the value is checked ag
 
 ## Adding a cheat
 
-1. A `CH_` entry in `uw1/src/port/portgame.h`, before `CH_COUNT`.
-2. Its entry in `cheat_live_table` (`uw1/src/port/sys/cheattab.c`): its name, its neutral value (the game as DOS plays it) and its range; and its row in `cheat_rows`, with `.live = 1 + CH_...`, its tab, its settings-file key `cheat-NAME`, and an `.about` help line.
+1. A `CH_` entry in the game's `src/port/portgame.h` (`uw1/` or `uw2/`), before `CH_COUNT`.
+2. Its entry in `cheat_live_table` (the game's `src/port/sys/cheattab.c`): its name, its neutral value (the game as DOS plays it) and its range; and its row in `cheat_rows`, with `.live = 1 + CH_...`, its tab, its settings-file key `cheat-NAME`, and an `.about` help line.
 3. Where the game acts on it, in port-only code (`#ifndef __TURBOC__`): `cheat_live(CH_...)` gives its value, or the neutral one while the master switch is off. Read it only on the game's thread (the game's own code always is), and leave the game exactly as it was at the neutral value, random numbers drawn and all, so that every session recorded in DOS still replays.
 4. This page.

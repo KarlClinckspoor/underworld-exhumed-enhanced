@@ -38,6 +38,9 @@
 #include "sound.h"
 #include "sys.h"
 #include "ui.h"
+#ifndef __TURBOC__
+#include <stdio.h>                      /* port only: the map-fill cheat reads DATA\TERRAIN.DAT */
+#endif
 
 #ifndef __TURBOC__
 /* Port only (docs/PORT.md, "Host hazards"; UW1's issue 7): a note's text into a 50-byte buffer
@@ -99,6 +102,10 @@ static int16 map_mouse;
    switch to). Walking music plays if none of the map themes is. */
 #ifndef __TURBOC__
 void far port_map_key(int how);
+void far port_map_teleport(void);       /* the player's Ctrl+T cheat, at the end of this file */
+static char teleport_key;               /* Ctrl+T is registered (once, as the keys above are) */
+void far port_map_fill(void);           /* the player's Ctrl+M cheat, at the end of this file */
+static char fill_key;                   /* Ctrl+M is registered (once, as Ctrl+T is) */
 #endif
 
 void far AutoMap(void)
@@ -120,6 +127,27 @@ void far AutoMap(void)
         map_mouse = input_addmouse(0, 0, 0x13F, 0xC7, 0, 2, (InputFn)ManageDungeonMap);
         registered = 1;
     }
+#ifndef __TURBOC__
+    /* port only: the player's Ctrl+T and Ctrl+M cheats (port_map_teleport, port_map_fill), as
+       UW1's. Each is registered the first time the map opens with its cheat on, and never
+       before: each entry grows the game's key table (INPUT.C's _input_addkey reallocates it), so
+       a session that never turns a cheat on keeps the original's table exactly, as the sessions
+       checked against DOS's need. Once registered a key stays, as the game's own keys do, and its
+       handler tests the cheat again each time, so turning it off still works. Mode 2 is the map
+       screen's; the game's own Ctrl+M (PLAYER.C, do_option_shortcut) answers in mode 1, the 3D
+       view, only. With Caps Lock on, MOUSE.C's do_keyboard_input gives the letter in capitals,
+       hence the second entry of each. */
+    if (!teleport_key && cheat_live(CH_MAP_TELEPORT)) {
+        _input_addkey(KEY_CTRL | 't', 0, 2, (InputFn)port_map_teleport);
+        _input_addkey(KEY_CTRL | 'T', 0, 2, (InputFn)port_map_teleport);
+        teleport_key = 1;
+    }
+    if (!fill_key && cheat_live(CH_MAP_FILL)) {
+        _input_addkey(KEY_CTRL | 'm', 0, 2, (InputFn)port_map_fill);
+        _input_addkey(KEY_CTRL | 'M', 0, 2, (InputFn)port_map_fill);
+        fill_key = 1;
+    }
+#endif
     kill_all_effects();
     if (get_current_music() < 8 || get_current_music() > 0xF) {
         set_random_walking_music(0);
@@ -992,5 +1020,256 @@ void far port_map_key(int how)
         ChangeAutoMapLevel(PlayerLevel);
     else if (how == 3 || how == 4)
         ChangeAutoMapLevel((adjacent_world[(level - 1) >> 3][how - 3] << 3) + ((level - 1) & 7) + 1);
+}
+
+/* The levels the two cheats below take: 1 to 0x46. From 0x47 on, a level number is a map scrap's
+   slot (update_map_scraps: the scrap's map is kept as the automap of level 0x47 + its quality),
+   not a place; ChangeAutoMapLevel shows such a number blank or as the scrap. A number below that
+   with no level behind it (a world has fewer than eight) is refused by each cheat in its own way:
+   Ctrl+T finds no seen square on it, Ctrl+M no level block. */
+#define CHEAT_LAST_LEVEL 0x46
+
+/* The player's map-teleport cheat (src/port/sys/cheattab.c's CH_MAP_TELEPORT; docs/CHEATS.md),
+   UW1's (its ui/AUTOMAP.C) for UW2: Ctrl+T on the map leaves the map and moves the player to the
+   square under the pointer, on the level the map shows, through the game's own routines, as the
+   test's "goto" cheat does (src/port/sys/cheats.c):
+
+   1. Where the pointer points. ManageDungeonMap reads a click at (inplist->x - 0x13,
+      inplist->y - 7) (UW1: 0x16), the point it writes a note at, and the map's region starts at
+      (0, 0), so inplist's position is the pointer's own, which mouse_getxy gives a key handler.
+      DoTile draws tile (tx, ty) in the three pixels from (tx - 1) * 3 + 10 and (ty - 1) * 3 + 7;
+      turned round, tx = (x - 10) / 3 + 1 and ty = (y - 7) / 3 + 1. The map holds tiles 1 to 62
+      (ShowDungeonMap's loops); a point outside them is refused.
+   2. Which level. The one the map shows (level), 1 to CHEAT_LAST_LEVEL. On another level the
+      destination is not loaded until the move, and new_player_pos kills a player it cannot
+      place there; so on another level only a square the player has seen is taken (its
+      PlayersMap type 1 to 9, as ShowDungeonMap draws them), which also refuses a level that does
+      not exist (it has no map). On the player's own level do_teleport looks for room itself.
+   3. The move. do_teleport (event/WORLDEV.C) checks this level's square and finds room near it,
+      and records the move (NewPlayerLevel, NewPlayerX, NewPlayerY). It also keeps UW2's rules
+      for any teleport of the player: none while asleep in the void (unless to the Ethereal
+      Void), leaving the jail cell counts as escaping it, and leaving one's part of the Pits'
+      arena as running away. Then newscr(1) leaves the map as Esc does (ExitAutoMap saves the
+      notes and reloads the player's own level's map if another was shown), and editchng(8) asks
+      for the 3D view's change handler 3, new_player_pos, which carries the move out on the next
+      pass: the fade, the level change for another level, the placing, as after a teleport trap.
+   Anything refused leaves the map open and changes nothing: UW2's map makes no sound to refuse
+   with (UW1's beeps, do_beep, which UW2 does not have). */
+void far port_map_teleport(void)
+{
+    int16 x, y;
+    int tx, ty, type;
+
+    if (!cheat_live(CH_MAP_TELEPORT))   /* turned off (or the master switch) since it was registered */
+        return;
+    /* a living player with no move already pending (as the test cheat's cheat_ready asks), and a
+       level that is a place */
+    if (ThePlayer == 0 || ThePlayer->hp == 0 || NewPlayerX != 0 || level < 1 || level > CHEAT_LAST_LEVEL)
+        return;
+    mouse_getxy(&x, &y);
+    x -= 0x13;                          /* the note's point, as ManageDungeonMap's mx, my */
+    y -= 7;
+    if (x < 10 || y < 7)                /* left of or below tile 1 (and no negative division) */
+        return;
+    tx = (x - 10) / 3 + 1;
+    ty = (y - 7) / 3 + 1;
+    if (tx > 0x3E || ty > 0x3E)
+        return;
+    type = PlayersMap[ty][tx] & 0xF;    /* the map of the level shown (ChangeAutoMapLevel loaded it) */
+    if (level != PlayerLevel && (type <= 0 || type >= 10))
+        return;
+    if (do_teleport(ThePlayer, tx, ty, level) != 0x10)   /* no room near it on this level, or a rule */
+        return;
+    newscr(1);
+    editchng(8);
+}
+
+/* The player's map-fill cheat (src/port/sys/cheattab.c's CH_MAP_FILL; docs/CHEATS.md), UW1's for
+   UW2: Ctrl+M on the map fills in the map of the level shown, as if the player had seen every
+   square of it, and draws it again at once. UW2 has a whole-level map of its own, automap_area
+   with ReturnOne_ovr094_2A1 (ovr094_2A8, which nothing calls; the Map Area spell maps a part of
+   the level with it), but it gives every square only its type and terrain: its loop over a
+   square's objects assigns terr to itself (as in DOS), so it marks no door, bridge or stairs.
+   So the cheat does not call it, and works a square's byte out as the 3D view does instead. */
+
+/* DRAWOBJ.C's tables of the 3D objects' models: no header declares them (only DRAWOBJ.C uses
+   them). UW2's rect_cols has a fifth byte, the model's count of textures. */
+extern unsigned char rect_cols[32][5];
+extern int16 rect_sub[32];
+
+/* What the 3D view adds to a square's automap byte for object o lying on it, in bits 4..5 (UW1:
+   6..7) as the value 1 to 3 (0 for nothing), worked out as DRAWOBJ.C's drawing works it out.
+   grdb_elem (3d/GRIDDB.C) draws the square's objects, and each drawing routine that marks the
+   map sets curautocode on the way:
+     - do_obj leaves out the player's own object and invisible ones (so they mark nothing);
+     - 1, a door: render type 2 with item & 0x3F below 0x10 goes to do_door, which sets 1;
+     - 2, drawn in the 0xE9.. colours (DoTile): render type 2 with item & 0x3F of 0x10 or more is
+       a 3D model, rect_sub[(item & 0x3F) - 0x10]; do_rect marks model 2 (the bridge) when the
+       object's flags pick a plain colour rather than a texture, that is flags below
+       rect_cols[2][4], the model's count of textures;
+     - 3, drawn dark: render type 3 other than minor class 3 (the wall-textured objects) whose
+       texture's terrain, terr[owner] & 7, is 3 or 4 (the stairs' textures).
+   terr is that level's terrain of each of its 64 texture slots (TxmTerr for the level in
+   memory). The bound check on rect_sub is the port's: DOS reads past its end for an object no
+   level has, and this gives 0 there instead. */
+static unsigned char map_fill_kind(struct Object far *o, const uint16 *terr)
+{
+    int item;
+    int t;
+
+    if (o == ThePlayer || OBJ_INVIS(o) == 1)
+        return 0;
+    item = OBJ_ITEM(o);
+    switch (ComObjData[item].render) {
+    case 2:
+        item &= 0x3F;
+        if ((item >> 4) == 0)
+            return 1;                   /* do_door */
+        item -= 0x10;
+        if (item < 0x20 && rect_sub[item] == 2 && (rect_cols[2][0] & 0x10)
+            && OBJ_FLAGS(o) < rect_cols[2][4])
+            return 2;                   /* do_rect's model 2, in its own colours */
+        return 0;
+    case 3:
+        if (OBJ_MINOR(o) == 3)
+            return 0;
+        t = terr[OBJ_OWNER(o)] & 7;     /* the owner field is 6 bits: always one of the 64 slots */
+        return t == 3 || t == 4 ? 3 : 0;
+    }
+    return 0;
+}
+
+/* The object a link names: on the level in memory (blk 0) as Obj_PtrTMem finds it, else in the
+   level block blk read from LEV.ARK, laid out alike (mobile objects below NUM_MOBILE, then the
+   statics, whose first 8 bytes are a struct Object's, link included). 0 for the end of a list. */
+static struct Object far *map_fill_obj(struct LevelBlock far *blk, union Link far *link)
+{
+    unsigned i = link->f.index;
+
+    if (blk == 0)
+        return Obj_PtrTMem(link);
+    if (i == 0)
+        return 0;
+    if (i < NUM_MOBILE)
+        return blk->mobile + i;
+    if (i < NUM_MOBILE + NUM_STATIC)
+        return (struct Object far *)(blk->statics + (i - NUM_MOBILE));
+    return 0;
+}
+
+/* Fills PlayersMap (the map of the level shown) from that level's squares, tiles, with terr the
+   terrain of each of its texture slots and blk its level block (0 for the level in memory).
+   Each square gets the byte grdb_elem writes for a square it draws lit (its distance shade
+   below 8): the tile type, ORed with its floor's terrain class (TxmTerr's bits 6..7: water, lava
+   or ice, which DoTile shades), and in bits 4..5 the mark of its objects (map_fill_kind).
+   grdb_elem keeps the mark of the last of a square's objects that sets one; here too the last
+   one in the square's list that has one wins.
+   Left as they are: solid squares (type 0, never drawn by ShowDungeonMap; their 0 or 0x0A edges
+   stay as the walk past them left them) and squares already seen (type 1 to 9, the game's own
+   bytes, marks included). A square known but not seen (tile_mapcode's and the map scraps'
+   0x0A to 0x0F, which ShowDungeonMap does not draw) gets its full byte. The walk along a list
+   stops after as many objects as a level holds, so that a list that loops (a damaged save)
+   cannot hang the game. */
+static void map_fill_tiles(struct Tile far *tiles, struct LevelBlock far *blk, const uint16 *terr)
+{
+    unsigned char *am = PlayersMap[0];  /* a square's byte is PlayersMap[0][x + y * 64] */
+    struct Tile far *t;
+    struct Object far *o;
+    unsigned char code, kind, k;
+    int i, n, type;
+
+    for (i = 0; i < MAP_TILES; i++) {
+        t = tiles + i;
+        if (t->type == 0)
+            continue;
+        type = am[i] & 0xF;
+        if (type > 0 && type < 10)
+            continue;                   /* seen: left as the game drew it */
+        code = t->type | (terr[t->floor] & TERR_CLASS);
+        kind = 0;
+        for (o = map_fill_obj(blk, &t->objects), n = 0; o != 0 && n < NUM_MOBILE + NUM_STATIC;
+             o = map_fill_obj(blk, &o->qn.link), n++)
+            if ((k = map_fill_kind(o, terr)) != 0)
+                kind = k;
+        am[i] = code | kind << 4;
+    }
+}
+
+/* The terrain words of a level's 64 textures, from DATA\TERRAIN.DAT, as TEXTMAPS.C's
+   Load_Terrains reads them (a word at twice each texture's number), but into the caller's
+   array, so that the level in memory keeps its own (TxmTerr). ids is the level's texture block
+   (its first 64 words, the texture numbers). A word that cannot be read stays 0. */
+static void map_fill_terrains(const int16 *ids, uint16 *terr)
+{
+    FILE *fp;
+    int i;
+
+    memset(terr, 0, 0x40 * sizeof terr[0]);
+    if ((fp = fopen("DATA\\terrain.dat", "rb")) == NULL)
+        return;
+    for (i = 0; i < 0x40; i++)
+        if (fseek(fp, (long)ids[i] * 2, SEEK_SET) == 0)
+            fread(&terr[i], 2, 1, fp);
+    fclose(fp);
+}
+
+/* Ctrl+M on the map. The level shown (level) is 1 to CHEAT_LAST_LEVEL.
+   1. Its squares. The player's own level is the one in memory: mapdata, its objects, and the
+      terrain table Txm_Load made for it (TxmTerr). Another level is read from the game in
+      progress, the save directory's LEV.ARK (HomeDir, archive 1, which GAMEWRAP.C's GetLevel
+      reads levels from and SaveLevel writes them to): its level block (block level - 1, which
+      get_arc decompresses; checked by its magic word as Map_Load checks it) and its texture
+      block (level + 0x4F, 0x86 bytes, as Txm_Load reads it), whose texture numbers give its
+      terrain (map_fill_terrains). A level with no block there (a number between a world's last
+      level and the next world) is refused. Nothing of the level in memory is touched.
+   2. The fill (map_fill_tiles), into PlayersMap, which holds the level shown.
+   3. Keeping it. SaveAutoMapLevel writes PlayersMap as the level's automap block at once: the map
+      screen reads a level's map from there whenever it shows it (ChangeAutoMapLevel, and
+      ExitAutoMap for the player's own level after another was shown), and a saved game copies
+      the save directory, so the fill lasts as a map the player drew would.
+   4. Showing it. SaveTheWords keeps any note just written (as ChangeAutoMapLevel does before it
+      draws a level), then ShowAutoMapLevel draws the level again, with its notes, the gem, and
+      the player's marker if the player knows where he is (player->automap; the cheat does not
+      change that).
+   The drawing takes random numbers (PixelDarken's rough shading), so the game's stream changes, as
+   it does whenever the map is drawn; the key is input like any other, and a replay presses it
+   again. Anything refused leaves the map as it was.
+   Filled squares no longer count as new when the player first walks past them (GRIDDB.C counts
+   pipeexp, the explorer's experience, only for a byte of 0), nor when a map scrap shows them
+   (update_map_scraps gives experience only for a square the player's map has unseen). */
+void far port_map_fill(void)
+{
+    struct LevelBlock far *blk;
+    int16 ids[0x46];                    /* the texture block, 0x86 bytes (as Txm_Load's buf) */
+    uint16 terr[0x40];
+    char ok;
+
+    if (!cheat_live(CH_MAP_FILL))       /* turned off (or the master switch) since it was registered */
+        return;
+    if (level < 1 || level > CHEAT_LAST_LEVEL)
+        return;
+    if (level == PlayerLevel)
+        map_fill_tiles(mapdata, 0, TxmTerr);
+    else {
+        ok = 0;
+        if ((blk = malloc(sizeof *blk)) == 0)
+            return;
+        if (open_arc(1, HomeDir)) {
+            blk->magic = 0;
+            get_arc(1, level - 1, (char far *)blk);
+            ok = blk->magic == LEVEL_MAGIC && get_arc(1, level + 0x4F, (char far *)ids) == 0x86;
+            close_arc(1);
+        }
+        if (ok) {
+            map_fill_terrains(ids, terr);
+            map_fill_tiles(blk->tiles, blk, terr);
+        }
+        free(blk);
+        if (!ok)
+            return;
+    }
+    SaveAutoMapLevel(0, level);
+    SaveTheWords(level);
+    ShowAutoMapLevel(level);
 }
 #endif

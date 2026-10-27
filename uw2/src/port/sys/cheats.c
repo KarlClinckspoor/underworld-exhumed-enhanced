@@ -157,4 +157,10 @@ static const struct cheat_cmd cmds[] = {
     { "set", "FIELD VALUE", c_set },
 };
 
-const struct cheat_game cheat_game = { cmds, (int)(sizeof cmds / sizeof cmds[0]), cheat_ready };
+/* the player's live cheats (cheattab.c), beside a test's commands above: the runtime keeps them
+   apart by their event texts ("cfg ...", "act ..."), which is why no command here may be named
+   cfg or act. No actions yet. */
+extern const struct cheat_live cheat_live_table[CH_COUNT];
+
+const struct cheat_game cheat_game = { cmds, (int)(sizeof cmds / sizeof cmds[0]), cheat_ready,
+                                       cheat_live_table, CH_COUNT, NULL, 0 };

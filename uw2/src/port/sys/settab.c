@@ -30,7 +30,8 @@ extern const char *port_home;
 #endif
 
 /* The rows, in each tab's order; the display rows read each other's values */
-enum { R_MUSIC, R_SPEECH, R_ROMS, R_VOLUME, R_MOUSE, R_LOOK, R_FULL, R_SCALE, R_ASPECT, R_INTEGER, R_FOLDER, R_RECORD, R_START };
+enum { R_MUSIC, R_SPEECH, R_ROMS, R_VOLUME, R_MOUSE, R_LOOK, R_FULL, R_SCALE, R_ASPECT, R_INTEGER, R_FOLDER, R_RECORD, R_START,
+       R_CHEATS, R_CHEATS_SCREEN };
 
 /* Window scale offers only the scales whose window fits the display (with 4:3 as it stands) */
 static int scale_limit(void)
@@ -161,6 +162,16 @@ const struct setting port_settings[] = {
     [R_RECORD]  = { .tab = SET_TAB_GAME, .label = "Record sessions", .kind = SET_BOOL, .key = "recording", .def = 1,
                     .restart = 1 },
     [R_START]   = { .tab = SET_TAB_GAME, .label = "Show this at start", .kind = SET_BOOL, .key = "settings-at-start", .def = 1 },
+    /* The player's cheats (cheattab.c, docs/CHEATS.md): the master switch, a live cheat of its own
+       (CH_ON), so that turning it off undoes every cheat at once and keeps their settings; and the
+       row that opens the Cheats screen, which main.c adds as screen 1 (settings_add_screen). */
+    [R_CHEATS]  = { .tab = SET_TAB_GAME, .label = "Cheats", .kind = SET_BOOL, .key = "cheats", .def = 0,
+                    .live = 1 + CH_ON,
+                    .about = "Turns on the cheats chosen on the Cheats screen (off: the game plays as the original, "
+                             "and they keep their settings). They change play, and a recording made with them "
+                             "replays only in this port" },
+    [R_CHEATS_SCREEN] = { .tab = SET_TAB_GAME, .label = "Cheats...", .kind = SET_ACTION, .opens = 1,
+                    .about = "The cheats, one tab for each kind. Each takes effect when this screen closes" },
 };
 const int port_settings_count = (int)(sizeof port_settings / sizeof port_settings[0]);
 

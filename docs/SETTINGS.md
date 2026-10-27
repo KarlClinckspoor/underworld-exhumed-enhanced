@@ -66,8 +66,8 @@ One switch for each enhancement the game has, all off by default. The selected o
 | Game folder | The folder holding your copy of the game. A folder that is not the game is refused and the old one stays | `data` | next start | `--data DIR` (kept) |
 | Record sessions | Each session's inputs go to `recordings/` in the home folder (the newest five are kept), so a crash can be replayed | `recording` | next start | `--no-recording` (this run only) |
 | Show this at start | Opens this screen before the game starts | `settings-at-start` | next start | none |
-| Cheats | UW1: the master switch of the player's cheats ([CHEATS.md](CHEATS.md)); off, the game plays as the original | `cheats` | when the screen closes | none |
-| Cheats... | UW1: opens the Cheats screen, a screen of its own with a tab for each kind of cheat; Esc comes back here ([CHEATS.md](CHEATS.md)) | none (each cheat has its own `cheat-NAME` key) | when the screen closes | none |
+| Cheats | The master switch of the player's cheats ([CHEATS.md](CHEATS.md)); off, the game plays as the original | `cheats` | when the screen closes | none |
+| Cheats... | Opens the Cheats screen, a screen of its own with a tab for each kind of cheat; Esc comes back here ([CHEATS.md](CHEATS.md)) | none (each cheat has its own `cheat-NAME` key) | when the screen closes | none |
 
 ## The command line and the file
 

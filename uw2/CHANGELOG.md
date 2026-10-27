@@ -2,6 +2,11 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw2-vX.Y.Z` (before the move to Underworld Exhumed, `vX.Y.Z`).
 
+## Unreleased
+
+- **New:** cheats, off until you turn them on ([CHEATS.md](../docs/CHEATS.md)), as in the UW1 port. The settings screen's Game tab has a master switch, Cheats, and a Cheats... row that opens a screen of its own, with a tab for each kind of cheat. Changes take effect when the screen closes, and are saved like any setting. The first two, on the Travel tab: Ctrl+T on the map takes you to the square under the pointer, on the level the map shows, in any world; Ctrl+M on the map fills in the map of the level shown, doors, bridges and stairs included, and the map is kept as one you drew.
+- **Changed:** a session in which you use a cheat is recorded with it (recording format 7), so that its recording replays exactly; DOS cannot replay such a recording. Sessions without cheats are recorded as before.
+
 ## 1.2.3 (14 October 2026)
 
 - **Fixed:** creating a female character crashed the game on choosing any portrait but the first (UW1's issue 8, which UW2 shares). DOS draws her; the port now does too.

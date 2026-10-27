@@ -39,7 +39,7 @@ The first run gets a Sound Blaster with FM music and digitised speech or effects
 
 **If something goes wrong,** [open an issue](https://github.com/abedegno/underworld-exhumed/issues/new/choose). Each play session's inputs are recorded to `recordings/` in the home folder (the newest five are kept). Zip the newest folder with the log beside it and attach it: it replays your session here exactly.
 
-Optional enhancements, all off by default, are listed in [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md). *Ultima Underworld*'s port also has cheats, off until you turn them on in the settings screen's Game tab and set while you play: [docs/CHEATS.md](docs/CHEATS.md).
+Optional enhancements, all off by default, are listed in [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md). Both ports also have cheats, off until you turn them on in the settings screen's Game tab and set while you play: [docs/CHEATS.md](docs/CHEATS.md).
 
 ### In a browser
 
