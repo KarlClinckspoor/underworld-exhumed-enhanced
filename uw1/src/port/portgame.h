@@ -89,7 +89,7 @@ enum { ENH_SKIP_INTRO, ENH_WRAP_MENU, ENH_FAST_PANELS, ENH_FREE_HEADING, ENH_SUB
    CH_ON must stay 0: the runtime treats entry 0 as the master switch, and while it is off every
    other entry reads as its neutral default. New cheats go before CH_COUNT; their names, not
    their numbers, are what a recording keeps, so the order may change. */
-enum { CH_ON, CH_MAP_TELEPORT,
+enum { CH_ON, CH_MAP_TELEPORT, CH_MAP_FILL,
        CH_COUNT };
 /* --enhance modern-keys: the key code a lone left Shift gives (ui/MOUSE.C), unused by the game */
 #define PORT_KEY_LSHIFT 0xBF

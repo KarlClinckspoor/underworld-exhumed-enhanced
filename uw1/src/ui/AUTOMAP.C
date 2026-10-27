@@ -45,6 +45,9 @@
 #include "sound.h"
 #include "sys.h"
 #include "ui.h"
+#ifndef __TURBOC__
+#include <stdio.h>                      /* port only: the map-fill cheat reads DATA\TERRAIN.DAT */
+#endif
 
 /* Declared in each file that uses it, its own way (no header). */
 unsigned char far bltfromdrive(char *name, void far *buf, unsigned n);
@@ -122,6 +125,8 @@ static int16 map_mouse;
 void far port_map_key(int how);
 void far port_map_teleport(void);       /* the player's Ctrl+T cheat, at the end of this file */
 static char teleport_key;               /* Ctrl+T is registered (once, as the keys above are) */
+void far port_map_fill(void);           /* the player's Ctrl+M cheat, at the end of this file */
+static char fill_key;                   /* Ctrl+M is registered (once, as Ctrl+T is) */
 #endif
 
 void far AutoMap(void)
@@ -149,6 +154,14 @@ void far AutoMap(void)
         /* with Caps Lock on, MOUSE.C's do_keyboard_input gives the letter in capitals */
         _input_addkey(KEY_CTRL | 'T', 0, MODE_MAP, (InputFn)port_map_teleport);
         teleport_key = 1;
+    }
+    /* port only: the player's Ctrl+M cheat (port_map_fill), registered as Ctrl+T is and for the
+       same reason. The game's own Ctrl+M (PLAYER.C, do_option_shortcut) answers in the 3D view
+       only (its mask is MODE_GAME), so on the map this one is the only Ctrl+M there is. */
+    if (!fill_key && cheat_live(CH_MAP_FILL)) {
+        _input_addkey(KEY_CTRL | 'm', 0, MODE_MAP, (InputFn)port_map_fill);
+        _input_addkey(KEY_CTRL | 'M', 0, MODE_MAP, (InputFn)port_map_fill);   /* Caps Lock on */
+        fill_key = 1;
     }
 #endif
     set_new_music(MUSIC_MAPS);
@@ -789,5 +802,200 @@ void far port_map_teleport(void)
     }
     newscr(MODE_GAME);
     editchng(8);
+}
+
+/* The player's map-fill cheat (src/port/sys/cheattab.c's CH_MAP_FILL; docs/CHEATS.md): Ctrl+M on
+   the map fills in the map of the level shown, as if the player had seen every square of it, and
+   draws it again at once. Below, how a square's byte is made (map_fill_tiles, map_fill_kind),
+   where a level's squares come from (port_map_fill), and why the result lasts. */
+
+/* DRAWOBJ.C's tables of the 3D objects' models, and TEXTMAPS.C's terrain of each wall texture
+   slot of the level in memory: no header declares them (only DRAWOBJ.C and TEXTMAPS.C use them) */
+extern unsigned char rect_cols[30][4];
+extern int16 rect_sub[32];
+extern uint16 w64_types[TXM_WALLS];
+
+/* What the 3D view adds to a square's automap byte for object o lying on it, in bits 6..7 (0 for
+   nothing), worked out as DRAWOBJ.C's drawing works it out. grdb_elem (3d/GRIDDB.C) draws the
+   square's objects, and each drawing routine that marks the map sets curautocode on the way:
+     - do_obj leaves out the player's own object and invisible ones (so they mark nothing);
+     - 1, a door: render type 2 with item & 0x3F below 0x10 goes to do_door, which sets 1;
+     - 2, drawn in the 0xE9.. colours (DoTile): render type 2 with item & 0x3F of 0x10 or more is
+       a 3D model, rect_sub[(item & 0x3F) - 0x10]; do_rect marks model 2 (the bridge, item 0x164)
+       when the object's flags pick a plain colour rather than a texture, that is flags below
+       (rect_cols[2][3] >> 5) + 1, the model's count of textures;
+     - 3, drawn dark: render type 3 other than minor class 3 (the wall-textured objects) whose
+       texture, slot owner of the level's wall textures, has the stairs' terrain (TERR_STAIRS_UP
+       or TERR_STAIRS_DOWN).
+   walls is that level's terrain of each wall slot (w64_types for the level in memory). The bounds
+   checks are the port's: DOS reads rect_sub and w64_types past their ends for an object no level
+   has, and this reads 0 there instead. */
+static unsigned char map_fill_kind(struct Object far *o, const uint16 *walls)
+{
+    int item;
+    int terr;
+
+    if (o == ThePlayer || OBJ_INVIS(o) == 1)
+        return 0;
+    item = OBJ_ITEM(o);
+    switch (ComObjData[item].render) {
+    case 2:
+        item &= 0x3F;
+        if ((item >> 4) == 0)
+            return 1;                   /* do_door */
+        item -= 0x10;
+        if (item < 0x20 && rect_sub[item] == 2 && (rect_cols[2][0] & 0x10)
+            && OBJ_FLAGS(o) < (rect_cols[2][3] >> 5) + 1)
+            return 2;                   /* do_rect's model 2, in its own colours */
+        return 0;
+    case 3:
+        if (OBJ_MINOR(o) == 3 || OBJ_OWNER(o) >= TXM_WALLS)
+            return 0;
+        terr = walls[OBJ_OWNER(o)] & 0xFF;
+        return terr == TERR_STAIRS_UP || terr == TERR_STAIRS_DOWN ? 3 : 0;
+    }
+    return 0;
+}
+
+/* The object a link names: on the level in memory (blk 0) as Obj_PtrTMem finds it, else in the
+   level block blk read from LEV.ARK, laid out alike (mobile objects below NUM_MOBILE, then the
+   statics, whose first 8 bytes are a struct Object's, link included). 0 for the end of a list. */
+static struct Object far *map_fill_obj(struct LevelBlock far *blk, union Link far *link)
+{
+    unsigned i = link->f.index;
+
+    if (blk == 0)
+        return Obj_PtrTMem(link);
+    if (i == 0)
+        return 0;
+    if (i < NUM_MOBILE)
+        return blk->mobile + i;
+    if (i < NUM_MOBILE + NUM_STATIC)
+        return (struct Object far *)(blk->statics + (i - NUM_MOBILE));
+    return 0;
+}
+
+/* Fills PlayersMap (the map of the level shown) from that level's squares, tiles, with floors and
+   walls the terrain of each floor and wall texture slot of the level, and blk its level block (0
+   for the level in memory). Each square gets the byte grdb_elem writes for a square it draws
+   lit (its distance shade below 8): the tile type, ORed with the floor's terrain word (its low byte,
+   as grdb_elem takes it: 0x10 water, 0x20 lava, which DoTile shades), and in bits 6..7 the mark
+   of its objects (map_fill_kind). grdb_elem keeps the mark of the last of a square's objects
+   that sets one; here too the last one in the square's list that has one wins.
+   Left as they are: solid squares (type 0, never drawn by ShowDungeonMap; their 0 or 0x0A edges
+   stay as the walk past them left them) and squares already seen (type 1 to 9, the game's own
+   bytes, marks included). A square the 3D walk only passed (tile_mapcode's 0x0A to 0x0F, which
+   ShowDungeonMap does not draw) gets its full byte. The walk along a list stops after as many
+   objects as a level holds, so that a list that loops (a damaged save) cannot hang the game. */
+static void map_fill_tiles(struct Tile far *tiles, struct LevelBlock far *blk,
+                           const uint16 *floors, const uint16 *walls)
+{
+    unsigned char *am = PlayersMap[0];  /* a square's byte is PlayersMap[0][x + y * 64] */
+    struct Tile far *t;
+    struct Object far *o;
+    unsigned char code, kind, k;
+    int i, n, type;
+
+    for (i = 0; i < MAP_TILES; i++) {
+        t = tiles + i;
+        if (t->type == TILE_SOLID)
+            continue;
+        type = am[i] & 0xF;
+        if (type > 0 && type < 10)
+            continue;                   /* seen: left as the game drew it */
+        code = t->type | (t->floor < TXM_FLOORS ? floors[t->floor] & 0xFF : 0);
+        kind = 0;
+        for (o = map_fill_obj(blk, &t->objects), n = 0; o != 0 && n < NUM_MOBILE + NUM_STATIC;
+             o = map_fill_obj(blk, &o->qn.link), n++)
+            if ((k = map_fill_kind(o, walls)) != 0)
+                kind = k;
+        am[i] = code | kind << 6;
+    }
+}
+
+/* The terrain words of a level's wall and floor textures, from DATA\TERRAIN.DAT, as
+   TEXTMAPS.C's Load_Terrains reads them (walls from offset 0, floors from 0x200, a word each),
+   but into the caller's arrays, so that the level in memory keeps its own (w64_types, TxmTerr).
+   ids is the level's texture block (LEVARK_TXM: 48 wall texture numbers, then 10 floor ones). A
+   word that cannot be read stays 0, a normal wall or floor. */
+static void map_fill_terrains(const int16 *ids, uint16 *walls, uint16 *floors)
+{
+    FILE *fp;
+    int i;
+
+    memset(walls, 0, TXM_WALLS * sizeof walls[0]);
+    memset(floors, 0, TXM_FLOORS * sizeof floors[0]);
+    if ((fp = fopen("DATA\\terrain.dat", "rb")) == NULL)
+        return;
+    for (i = 0; i < TXM_WALLS; i++)
+        if (fseek(fp, (long)ids[i] * 2, SEEK_SET) == 0)
+            fread(&walls[i], 2, 1, fp);
+    for (i = 0; i < TXM_FLOORS; i++)
+        if (fseek(fp, (long)ids[TXM_WALLS + i] * 2 + 0x200, SEEK_SET) == 0)
+            fread(&floors[i], 2, 1, fp);
+    fclose(fp);
+}
+
+/* Ctrl+M on the map. The level shown (level) is 1 to 8, as for Ctrl+T: ChangeAutoMapLevel loads a
+   map only below 9, and level 9 has no automap at all (GRIDDB.C's switch is off there).
+   1. Its squares. The player's own level is the one in memory: mapdata, its objects, and the
+      terrain tables Txm_Load made for it (TxmTerr, w64_types). Another level is read from the
+      game in progress, SAVE0\LEV.ARK, where GAMEWRAP.C's SaveLevel left it when the player last
+      left it (or the new game's copy, if never visited): its level block (LEVARK_MAP, checked by
+      its magic word as Map_Load checks it) and its texture block (LEVARK_TXM), whose texture
+      numbers give its terrain (map_fill_terrains). Nothing of the level in memory is touched.
+   2. The fill (map_fill_tiles), into PlayersMap, which holds the level shown.
+   3. Keeping it. SaveAutoMapLevel writes PlayersMap as the level's automap block at once: the map
+      screen reads a level's map from there whenever it shows it (ChangeAutoMapLevel, and
+      ExitAutoMap for the player's own level after another was shown), and a saved game copies
+      SAVE0, so the fill lasts as a map the player drew would.
+   4. Showing it. SaveTheWords keeps any note just written (as ChangeAutoMapLevel does before it
+      draws a level), then ShowAutoMapLevel draws the level again, its notes and marker included.
+   The drawing takes random numbers (PixelDarken's rough shading), so the game's stream changes, as
+   it does whenever the map is drawn; the key is input like any other, and a replay presses it
+   again. A level that cannot be read beeps, as a refused Ctrl+T does, and the map stays as it was.
+   Filled squares no longer count as new when the player first walks past them (GRIDDB.C counts
+   pipeexp, the explorer's experience, only for a byte of 0). */
+void far port_map_fill(void)
+{
+    struct Arc arc;
+    struct LevelBlock far *blk;
+    int16 ids[0x40];                    /* the texture block, TXM_BLOCK_SIZE bytes (as Txm_Load's) */
+    uint16 walls[TXM_WALLS];
+    uint16 floors[TXM_FLOORS];
+    char ok;
+
+    if (!cheat_live(CH_MAP_FILL))       /* turned off (or the master switch) since it was registered */
+        return;
+    if (level < 1 || level > 8) {
+        do_beep(0x12C, 0xA);
+        return;
+    }
+    if (level == PlayerLevel)
+        map_fill_tiles(mapdata, 0, TxmTerr, w64_types);
+    else {
+        ok = 0;
+        if ((blk = malloc(LEVEL_SIZE)) != 0) {
+            if (open_arc(&arc, "SAVE0\\lev.ark")) {
+                blk->magic = 0;
+                get_arc(&arc, LEVARK_MAP(level), blk);
+                ok = blk->magic == LEVEL_MAGIC
+                     && get_arc(&arc, LEVARK_TXM(level), ids) == TXM_BLOCK_SIZE;
+                close_arc(&arc);
+            }
+            if (ok) {
+                map_fill_terrains(ids, walls, floors);
+                map_fill_tiles(blk->tiles, blk, floors, walls);
+            }
+            free(blk);
+        }
+        if (!ok) {
+            do_beep(0x12C, 0xA);
+            return;
+        }
+    }
+    SaveAutoMapLevel(0, level);
+    SaveTheWords(level);
+    ShowAutoMapLevel(level);
 }
 #endif

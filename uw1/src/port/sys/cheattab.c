@@ -15,7 +15,8 @@
    How a change reaches the game, and why a recording replays it exactly, is Exhume's (its
    runtime/README.md, "The player's live cheats"): the screen posts it, the game's thread takes it
    at the next pass of its main loop and records it. So nothing here touches the game: the game's
-   own code reads each value with cheat_live(CH_...) where it acts on it (Ctrl+T: ui/AUTOMAP.C). */
+   own code reads each value with cheat_live(CH_...) where it acts on it (Ctrl+T and Ctrl+M:
+   ui/AUTOMAP.C). */
 #include "portgame.h"
 #include "sys/cheat.h"
 #include "ui/settings.h"
@@ -24,6 +25,7 @@
 const struct cheat_live cheat_live_table[CH_COUNT] = {
     [CH_ON]           = { "cheats", 0, 0, 1, NULL },
     [CH_MAP_TELEPORT] = { "map-teleport", 0, 0, 1, NULL },
+    [CH_MAP_FILL]     = { "map-fill", 0, 0, 1, NULL },
 };
 
 /* The Cheats screen's tabs. Only Travel has cheats yet; the plan's other tabs (Checks, Skill odds,
@@ -38,5 +40,10 @@ const struct setting cheat_rows[] = {
       .about = "On the map, Ctrl+T leaves the map and puts you on the square under the pointer, on the level "
                "shown (1 to 8). On another level, only a square you have seen. Takes effect the next time the "
                "map opens" },
+    { .tab = TAB_TRAVEL, .label = "Ctrl+M map fill", .kind = SET_BOOL, .key = "cheat-map-fill",
+      .def = 0, .live = 1 + CH_MAP_FILL,
+      .about = "On the map, Ctrl+M fills in the map of the level shown (1 to 8), as if you had seen all of "
+               "it, doors, bridges and stairs included. Squares filled give no explorer's experience later. "
+               "Takes effect the next time the map opens" },
 };
 const int cheat_rows_count = (int)(sizeof cheat_rows / sizeof cheat_rows[0]);
