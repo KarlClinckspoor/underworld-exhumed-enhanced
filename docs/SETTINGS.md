@@ -66,6 +66,8 @@ One switch for each enhancement the game has, all off by default. The selected o
 | Game folder | The folder holding your copy of the game. A folder that is not the game is refused and the old one stays | `data` | next start | `--data DIR` (kept) |
 | Record sessions | Each session's inputs go to `recordings/` in the home folder (the newest five are kept), so a crash can be replayed | `recording` | next start | `--no-recording` (this run only) |
 | Show this at start | Opens this screen before the game starts | `settings-at-start` | next start | none |
+| Start square (a mod's) | The square a new game starts on, `X,Y`, 1 to 62; not on the screen. See [MODDING.md](MODDING.md) | `start-square` | next start | `--start-square X,Y` (this run only) |
+| Executable patches (a mod's) | A file of byte patches to the executable's data; not on the screen. See [MODDING.md](MODDING.md) | `exe-patch` | next start | `--exe-patch FILE` (this run only) |
 
 ## The command line and the file
 

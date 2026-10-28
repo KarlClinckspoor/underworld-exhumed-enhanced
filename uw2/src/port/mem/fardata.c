@@ -202,6 +202,21 @@ int port_check_exe(const char *path)
     return r;
 }
 
+/* sys/mods.c: the file ranges of the GOG UW2.EXE whose bytes the port copies at start-up as the
+   game's data, which --exe-patch may change: the far data block, FD71 and DGROUP up to
+   the load module's end. Fixed, since only the GOG release is accepted: its header is 0x2C00
+   bytes and its load module ends at 0x717A0 (MZ pages). The code block is left out: the port
+   runs its own C, so a code byte changed there would change nothing reliably. */
+int port_exe_data_ranges(long *lo, long *hi, int max)
+{
+    const long hdr = 0x2C00L, mz_end = 0x717A0L;
+    int n = 0;
+    if (n < max) { lo[n] = hdr + FAR_FIRST; hi[n] = hdr + FAR_END; n++; }
+    if (n < max) { lo[n] = hdr + FD71_SEG * 16L; hi[n] = hdr + FD71_SEG * 16L + DSEG062_62A6_SIZE; n++; }
+    if (n < max) { lo[n] = hdr + DGROUP_SEG * 16L; hi[n] = mz_end; n++; }
+    return n;
+}
+
 int port_load_exe(const char *path)
 {
     FILE *f = fopen(path, "rb");
@@ -223,6 +238,10 @@ int port_load_exe(const char *path)
     fclose(f);
     if (crc32(exe, (size_t)n) != EXE_CRC) {
         fprintf(stderr, "uw2port: %s is not the GOG release's UW2.EXE (CRC-32 %08X)\n", path, crc32(exe, (size_t)n));
+        free(exe);
+        return -1;
+    }
+    if (port_mods_patch_exe(exe, n)) {               /* a mod's byte patches (sys/mods.c) */
         free(exe);
         return -1;
     }

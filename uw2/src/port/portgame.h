@@ -71,4 +71,13 @@ enum { ENH_SKIP_INTRO, ENH_WRAP_MENU, ENH_FAST_PANELS, ENH_FREE_HEADING, ENH_SUB
 #define PORT_KEY_LSHIFT 0xBF
 int port_pitch_bound(void);                 /* game/PLAYER.C: the pitch's bound either way */
 
+/* sys/mods.c: what a mod for the original game sets in its executable, given to the port
+   (--start-square, --exe-patch, --features; docs/MODDING.md). ui/MAINMENU.C asks for the start
+   square; mem/fardata.c applies the patches and says which of UW2.EXE's bytes are data. */
+#define PORT_EXE_NAME "UW2.EXE"
+int port_start_square(int axis, int dflt);
+int port_mods_active(void);
+int port_exe_data_ranges(long *lo, long *hi, int max);
+int port_mods_patch_exe(unsigned char *exe, long n);
+
 #endif

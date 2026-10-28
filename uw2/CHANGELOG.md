@@ -2,6 +2,10 @@
 
 For players. Each release's notes are drafted from here. Releases are tagged `uw2-vX.Y.Z` (before the move to Underworld Exhumed, `vX.Y.Z`).
 
+## Unreleased
+
+- **New:** settings for mods of the original game, which change the executable where the port cannot take a changed one ([MODDING.md](../docs/MODDING.md)): `--start-square X,Y` (or `start-square=` in the settings file) sets the square a new game starts on, and `--exe-patch FILE` (or `exe-patch=`) patches bytes of the executable's data as the port reads it. `--features` lists what the build supports, for a mod manager. Both are off unless set, say so in the log, and are kept with a session's recording (`MODS.TXT`), whose replay takes them from there.
+
 ## 1.2.3 (14 October 2026)
 
 - **Fixed:** creating a female character crashed the game on choosing any portrait but the first (UW1's issue 8, which UW2 shares). DOS draws her; the port now does too.

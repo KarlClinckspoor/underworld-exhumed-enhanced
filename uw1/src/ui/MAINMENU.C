@@ -226,7 +226,12 @@ void far real_start(int intro)
                     pfatal_code(err);
                 done = GetLevel(1) > 0;
                 if (done) {
+#ifndef __TURBOC__
+                    /* port-only: a mod's start square (sys/mods.c), else the game's own */
+                    player_setup(port_start_square(0, 0x20), port_start_square(1, 2), 1);
+#else
                     player_setup(0x20, 2, 1);
+#endif
                     do_level_hacks(1, 0);
                 }
             }

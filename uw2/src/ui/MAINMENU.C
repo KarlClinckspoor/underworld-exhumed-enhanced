@@ -200,7 +200,12 @@ void far real_start(int intro)
                 done = GetLevel(1) > 0;
                 if (done) {
                     load_dl();
+#ifndef __TURBOC__
+                    /* port-only: a mod's start square (sys/mods.c), else the game's own */
+                    player_setup(port_start_square(0, 0x13), port_start_square(1, 0x30), -1);
+#else
                     player_setup(0x13, 0x30, -1);
+#endif
                     do_level_hacks(1, 0);
                     preload_cr(0);
                     PreLoadCritPages();
