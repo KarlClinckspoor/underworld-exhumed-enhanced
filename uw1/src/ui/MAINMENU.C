@@ -36,6 +36,9 @@
 #include "sys.h"
 #include "ui.h"
 #include "file.h"
+#ifndef __TURBOC__
+#include "event.h"
+#endif
 
 unsigned char far grfx_load_font(char *name);    /* GRFX.C (gfx.h has why it is declared here) */
 
@@ -141,6 +144,37 @@ void far draw_start_buttons(int n, struct Button far *b, unsigned char text, int
     mouse_show();
 }
 
+#ifndef __TURBOC__
+/* port-only (sys/mods.c, docs/MODDING.md): a new game's first level and square. Without a
+   mod, the original's GetLevel(1), player_setup(0x20, 2, 1) and do_level_hacks(1, 0). With a
+   mod's start level or square: that level (and PlayerLevel, as new_player_pos sets it after
+   ChangeLevel) and square, the player moved to the nearest square it fits on, as
+   new_player_pos moves it after a teleport (the strict search only: the loose one throws the
+   square's objects out), or left on the square given when it fits nowhere near, as the
+   original's start leaves it. Returns 0 if the level cannot be loaded. */
+static int port_new_game_start(void)
+{
+    int level = port_start_level(1);
+    int x = port_start_square(0, 0x20), y = port_start_square(1, 2);
+    int16 nx = x, ny = y;
+
+    if (GetLevel(level) <= 0)
+        return 0;
+    PlayerLevel = level;
+    if (port_start_level(0) || port_start_square(0, 0)) {
+        int found = find_good_x_and_y(ThePlayer, x, y, &nx, &ny, 0) != 0;
+        if (!found) {
+            nx = x;
+            ny = y;
+        }
+        port_start_placed(level, x, y, nx, ny, found);
+    }
+    player_setup(nx, ny, 1);
+    do_level_hacks(level, 0);
+    return 1;
+}
+#endif
+
 /* The main menu loop (intro set: play the introduction when there are no saves). Returns
    once a game has been started or restored, with the game screen set up; a restore that
    fails shows string 0x2A9 and returns to the menu. */
@@ -224,16 +258,16 @@ void far real_start(int intro)
                 copy_file("DATA\\lev.ark", "SAVE0\\lev.ark");
                 if ((err = init_babl()) != 0)
                     pfatal_code(err);
+#ifndef __TURBOC__
+                /* port-only: a mod's start level and square (sys/mods.c), else the game's own */
+                done = port_new_game_start();
+#else
                 done = GetLevel(1) > 0;
                 if (done) {
-#ifndef __TURBOC__
-                    /* port-only: a mod's start square (sys/mods.c), else the game's own */
-                    player_setup(port_start_square(0, 0x20), port_start_square(1, 2), 1);
-#else
                     player_setup(0x20, 2, 1);
-#endif
                     do_level_hacks(1, 0);
                 }
+#endif
             }
             break;
         case 0:

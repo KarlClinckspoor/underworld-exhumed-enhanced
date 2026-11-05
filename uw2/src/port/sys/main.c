@@ -33,6 +33,7 @@ void port_report_motion(void);          /* src/port/3d/render.c */
 int port_trace;
 extern int16_t rp_request;              /* the runtime's replay/replay.c: 0 off, 1 record, 2 replay */
 void port_mods_cl_start(const char *v);   /* sys/mods.c */
+void port_mods_cl_level(const char *v);
 void port_mods_cl_patch(const char *v);
 int port_mods_init(const char *home, const char *replay);
 void port_mods_record(const char *home);
@@ -204,7 +205,9 @@ static const char help_text[] =
     "                         ($UW2PORT_DATA, the last folder used, GOG's install folders)\n"
     "  --home DIR             where saved games and settings go ($UW2PORT_HOME, else ~/.uw2port)\n"
     "Mods (docs/MODDING.md; for a mod manager):\n"
-    "  --start-square X,Y     a new game starts on square X,Y of level 1 (1 to 62; this run;\n"
+    "  --start-level N        a new game starts on level N (1 to 80; this run; start-level=\n"
+    "                         in the settings)\n"
+    "  --start-square X,Y     a new game starts on square X,Y (1 to 62; this run;\n"
     "                         start-square= in the settings)\n"
     "  --exe-patch FILE       byte patches to the executable's data, OFFSET ORIGINAL NEW a\n"
     "                         line in hex (this run; exe-patch= in the settings)\n"
@@ -406,6 +409,7 @@ int main(int argc, char *argv[])
         else if (!strcmp(a, "--hw-log") && i + 1 < argc) hw_log = argv[++i];
         else if (!strcmp(a, "-v")) port_trace = 1;
         else if (!strcmp(a, "--start-square") && i + 1 < argc) port_mods_cl_start(argv[++i]);
+        else if (!strcmp(a, "--start-level") && i + 1 < argc) port_mods_cl_level(argv[++i]);
         else if (!strcmp(a, "--exe-patch") && i + 1 < argc) port_mods_cl_patch(argv[++i]);
         else if (!strcmp(a, "--features")) features = 1;
         else if (!strcmp(a, "--help") || !strcmp(a, "-h")) usage(1);
