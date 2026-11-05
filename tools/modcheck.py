@@ -13,7 +13,9 @@ Exhume's examples/uw2/exhume.toml with UW2DECOMP set); the port must be built. I
   - a new game played with a start level and square (the newgame session's keys, at the times
     the setup sessions use) starts on that level and on the nearest square the player fits on,
     which the port's log says ("mods: a new game starts on level L, square (X, Y)") and its
-    position at the end shows (UWnPORT_POS_LOG); the recording keeps them in MODS.TXT;
+    position at the end shows (UWnPORT_POS_LOG); the recording keeps them in MODS.TXT. The square
+    is the same every run (MAINMENU.C's port_start_fit, not find_good_x_and_y, whose half-cleared
+    visited table made it hang on the stack's leftovers);
   - that recording replayed from an empty home starts in the same place again, from MODS.TXT.
 
 Each game's square is one the player does not fit on (UW1's level 2 (30, 30), UW2's level 10
@@ -28,12 +30,12 @@ import replay as R                      # takes --config from the command line (
 
 NAME = R.RC.port_name                   # uw1port or uw2port
 GAME = {
-    'uw1port': dict(levels=9, offsets=2, level=2, square=(30, 30), placed=(30, 31), motion=(7808, 8064),
+    'uw1port': dict(levels=9, offsets=2, level=2, square=(30, 30), placed=(31, 30), motion=(8064, 7808),
                     # title, Escape twice, Create Character, every default, the name, Yes
                     keys=[(9000, 'esc'), (12000, 'esc'), (15000, 'enter')] + [(18000 + 2000 * i, 'enter') for i in range(8)]
                     + [(34000 + 200 * i, c) for i, c in enumerate('avatar')] + [(36000, 'enter'), (38000, 'enter')],
                     play=42000),
-    'uw2port': dict(levels=80, offsets=6, level=10, square=(29, 29), placed=(29, 30), motion=(7552, 7808),
+    'uw2port': dict(levels=80, offsets=6, level=10, square=(29, 29), placed=(30, 29), motion=(7808, 7552),
                     keys=[(14000, 'esc'), (16500, 'esc'), (20000, 'enter')] + [(24000 + 3000 * i, 'enter') for i in range(8)]
                     + [(48000 + 200 * i, c) for i, c in enumerate('avatar')] + [(50000, 'enter'), (53000, 'enter')],
                     play=58000),

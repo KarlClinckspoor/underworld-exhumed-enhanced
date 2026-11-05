@@ -36,6 +36,8 @@
 #include "ui.h"
 #ifndef __TURBOC__
 #include "event.h"
+#include "map.h"
+#include "object.h"
 #endif
 
 /* name: FM Towns keeps these as statics, so their names are not known. */
@@ -118,14 +120,42 @@ void far draw_start_buttons(int n, struct Button far *b, unsigned char text, int
 }
 
 #ifndef __TURBOC__
+/* port-only: where the player fits at or near a mod's start square, for port_new_game_start:
+   the squares 0, 1, 2, 3 and 4 away in turn (the box find_good_x_and_y searches), each ring from
+   its south-west corner row by row, asking can_place as find_good_x_and_y asks it. Not
+   find_good_x_and_y itself, whose visited table is half cleared (FINDINGS), so the square it
+   picks hangs on what the stack held: one start, or its replay, could differ from another.
+   Returns 0 when the player fits nowhere there. */
+static int port_start_fit(int x, int y, int16 *nx, int16 *ny)
+{
+    int r, tx, ty;
+    struct Tile far *tile;
+
+    for (r = 0; r <= 4; r++)
+        for (ty = y - r; ty <= y + r; ty++)
+            for (tx = x - r; tx <= x + r; tx++) {
+                if ((tx != x - r && tx != x + r && ty != y - r && ty != y + r)
+                    || tx < 1 || tx > 62 || ty < 1 || ty > 62)
+                    continue;
+                tile = Map_GetAddr(tx, ty);
+                if (can_place(ThePlayer->id & ID_ITEM, Obj_MemTPtr(ThePlayer), tx * 8 + 3, ty * 8 + 3,
+                              (tile->height << 3) + ((tile_walls[tile->type] & 0x20) ? 4 : 0),
+                              0, 8)) {
+                    *nx = tx;
+                    *ny = ty;
+                    return 1;
+                }
+            }
+    return 0;
+}
+
 /* port-only (sys/mods.c, docs/MODDING.md): a new game's first level and square. Without a
    mod, the original's GetLevel(1), load_dl(), player_setup(0x13, 0x30, -1) and
    do_level_hacks(1, 0). With a mod's start level or square: that level (GetLevel sets
    PlayerLevel and reads its light, which load_dl reads again, as in the original) and square,
-   the player moved to the nearest square it fits on, as new_player_pos moves it after a
-   teleport (the strict search only: the loose one throws the square's objects out), or left
-   on the square given when it fits nowhere near, as the original's start leaves it. Returns 0
-   if the level cannot be loaded. */
+   the player moved to the nearest square it fits on (port_start_fit), or left on the square
+   given when it fits nowhere near, as the original's start leaves it. Returns 0 if the level
+   cannot be loaded. */
 static int port_new_game_start(void)
 {
     int level = port_start_level(1);
@@ -136,7 +166,7 @@ static int port_new_game_start(void)
         return 0;
     load_dl();
     if (port_start_level(0) || port_start_square(0, 0)) {
-        int found = find_good_x_and_y(ThePlayer, x, y, &nx, &ny, 0) != 0;
+        int found = port_start_fit(x, y, &nx, &ny);
         if (!found) {
             nx = x;
             ny = y;

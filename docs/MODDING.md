@@ -33,10 +33,11 @@ keeps the game's own square, which on another level may well be rock (see below)
   message.
 - **The player is put in the middle of the square**, on its floor, as the original does. With a
   start level or square set, a square the player does not fit on (rock, a diagonal wall) gives
-  way to the nearest one that it does within four squares, found as after a teleport (the game's
-  `find_good_x_and_y`, in its strict search, which moves nothing). When there is none the player
-  stands on the square given, in the rock, as the original's start would leave them. The log
-  says where the game started: `mods: a new game starts on level 10, square (29, 30)`.
+  way to the nearest one that it does within four squares: the squares one away first, then two,
+  and so on, each ring from its south-west corner row by row, asking the game's `can_place` as a
+  teleport's arrival does (`port_start_fit` in `src/ui/MAINMENU.C`). When there is none the
+  player stands on the square given, in the rock, as the original's start would leave them. The
+  log says where the game started: `mods: a new game starts on level 10, square (30, 29)`.
 - **The level's own rules for arriving** run as when the player walks onto it (`do_level_hacks`):
   UW1's level 7 takes the mana while the orb stands, for example. Nothing else of the story is
   set: the quests, conversations and everything a game changes on its way down are as at the
