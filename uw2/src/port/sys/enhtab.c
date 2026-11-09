@@ -35,4 +35,6 @@ const struct enhance_flag enhance_table[ENH_COUNT] = {
     { "true-enchants", "A melee weapon's enchantment is named for what it does: Damage when it adds damage, Accuracy when it adds to hit (the original names them the other way round)", ENH_FIX, NULL, NULL },
     /* obj/USEITEMS.C's UseKeyOn: a key that does not fit tries the other keys carried */
     { "key-ring", "A key that does not fit tries the other keys you carry, bags included, and locks or unlocks with the one that fits", ENH_GAMEPLAY, NULL, NULL },
+    /* motion/PHYSICS.C's square change calls ui/INTERACT.C's auto_ammo */
+    { "auto-ammo", "Walking onto a square picks up the sling stones, bolts and arrows there that join a stack you carry, if you can carry them; ammunition you drop is picked up again when you walk back over it", ENH_GAMEPLAY, NULL, NULL },
 };

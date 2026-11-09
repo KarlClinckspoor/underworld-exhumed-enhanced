@@ -1,0 +1,36 @@
+# auto-ammo: the saved game the auto-ammo enhanced session starts from. A new character, as the
+# newgame session makes one (every default, the name Avatar); then a test's cheats
+# (EXHUME_TEST_CHEATS=1; recording format 6): 10 sling stones (0x10) into the pack, the player
+# moved to (19, 51) on level 1, two squares south of the castle's door at (19, 53), and 5 more
+# sling stones dropped at their feet. Saved in slot 1, described "ammo"
+14000 key esc
+16500 key esc
+20000 key enter        # Create Character
+24000 key enter        # every default: sex, handedness, class, the skills, the portrait,
+27000 key enter        # the difficulty
+30000 key enter
+33000 key enter
+36000 key enter
+39000 key enter
+42000 key enter
+45000 key enter
+48000 key a            # the name
+48200 key v
+48400 key a
+48600 key t
+48800 key a
+49000 key r
+50000 key enter
+53000 key enter        # Yes
+60100 cheat give 0x10 10
+60300 cheat goto 1 19 51
+61500 cheat give 0x10 5 drop
+64000 down ctrl        # save: Ctrl+S, slot 1, "ammo"
+64100 key s
+64300 up ctrl
+66000 key enter
+67500 key a
+67700 key m
+67900 key m
+68100 key o
+69000 key enter

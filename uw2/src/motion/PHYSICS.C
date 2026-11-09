@@ -205,6 +205,9 @@ char far simple_fizix(int turn)
     struct MotionCalc calc;
     register int i;
     register int dist;
+#ifndef __TURBOC__
+    char entered = 0;                   /* port only: the player entered a square */
+#endif
 
     if (PN.acc[2] == 0 && PN.speed < MaxPlayerAccel)
     {
@@ -251,6 +254,9 @@ char far simple_fizix(int turn)
                     change_GrSq(sq, nvokHgt);
                     SET_HOMEX(ThePlayer, PN.x >> 8);
                     SET_HOMEY(ThePlayer, PN.y >> 8);
+#ifndef __TURBOC__
+                    entered = 1;
+#endif
                 }
                 SET_FINEX_UNSIGNED(ThePlayer, (PN.x >> 5) & 7);
                 SET_FINEY(ThePlayer, (PN.y >> 5) & 7);
@@ -261,6 +267,15 @@ char far simple_fizix(int turn)
                 }
                 else if (PN.acc[2] == 0 && !flying)
                     PN.acc[2] = -4;
+#ifndef __TURBOC__
+                /* port only: --enhance auto-ammo, as phys_affect_player below */
+                if (entered)
+                {
+                    if (ENHANCED(ENH_AUTO_AMMO))
+                        auto_ammo();
+                    ammo_probe();
+                }
+#endif
                 parse_player_terr(nvokTerr, 0);
                 SET_FRAME(ThePlayer, ((unsigned)GAME_TIME() & 0xFF) >> 6);
                 oldP = curP;
@@ -572,6 +587,13 @@ void far phys_affect_player(void)
         SET_HOMEX(ThePlayer, PN.x >> 8);
         SET_HOMEY(ThePlayer, PN.y >> 8);
         player_newsq(GrSq);
+#ifndef __TURBOC__
+        /* port only: --enhance auto-ammo takes the missiles on the square entered that merge
+           with a stack carried; UW2PORT_AMMO_PROBE reports them (INTERACT.C) */
+        if (ENHANCED(ENH_AUTO_AMMO))
+            auto_ammo();
+        ammo_probe();
+#endif
     }
     else if (PN.z >> 3 != z)
         hgt_change(ThePlayer, mapdata + GrSq, PN.z >> 3);

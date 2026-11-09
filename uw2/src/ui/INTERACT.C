@@ -404,6 +404,202 @@ void far player_3dget(void)
     }
 }
 
+#ifndef __TURBOC__
+/* port only: --enhance auto-ammo (docs/ENHANCEMENTS.md). On entering a square the player takes
+   the missiles lying there that merge with a stack already carried, as a stack dropped on that
+   one would merge (AddTogether: the same item, under 999 together; the missiles, sling
+   stones, bolts and arrows, merge whatever their quality). Only what player_3dget would let him
+   pick up: a resting object (not a missile in flight, which is mobile), within reach
+   (InPickRange, BlockingTerrain), and not owned, since taking an owned object is noticed
+   (player_grabbed). A pile goes whole or not at all: not when it would take the player over
+   the weight he can carry (EncumCheck) or a bag holding the stack over its capacity, and
+   nothing is said then. Each pile taken fires its pick-up triggers as release_3d does and
+   updates a pressure plate it lay on as player_3dget does (check_pplate), and is said: "You
+   pick up 5 sling stones." UW1's code (its INTERACT.C), with the pressure plates UW1 lacks. */
+
+#define AUTO_AMMO(o)    (OBJ_ITEM(o) >= ITEM_SLING_STONE && OBJ_ITEM(o) <= ITEM_ARROW_12)
+#define AUTO_DEPTH      8               /* bags within bags searched */
+#define AUTO_PACK_LAST  18              /* the backpack's last slot (inv.h's slots, unnamed in UW2) */
+
+static struct Object far *auto_bags[AUTO_DEPTH];   /* the containers around the stack found */
+static int auto_nbags;
+
+/* whether weight more fits in every container around the stack found, as ItemFitsSlot checks
+   a container's capacity, without its message */
+static int auto_ammo_room(int weight)
+{
+    int16 w;
+    int cap, i;
+
+    for (i = 0; i < auto_nbags; i++) {
+        w = (int16)weight;
+        BagWeight(&auto_bags[i]->ol.link, &w);
+        cap = Containers[OBJ_INCLASS(auto_bags[i])].capacity;
+        if (cap != 0 && w > cap)
+            return 0;
+    }
+    return 1;
+}
+
+/* the first stack in list, or in the containers in it (depth first, as key_ring and FindObj
+   walk them), that obj merges with and that has room for it; auto_bags then holds the
+   containers around it */
+static struct Object far *auto_ammo_find(struct Object far *list, struct Object far *obj, int weight)
+{
+    struct Object far *next;
+    struct Object far *found;
+
+    for (; list != 0; list = Obj_PtrTMem(&list->qn.link)) {
+        if (AddTogether(obj, list) && auto_ammo_room(weight))
+            return list;
+        if (OBJ_CLASS(list) == CLASS_CONTAINER && !OBJ_ISQUANT(list) && auto_nbags < AUTO_DEPTH
+            && (next = Obj_PtrTMem(&list->ol.link)) != 0) {
+            auto_bags[auto_nbags++] = list;
+            if ((found = auto_ammo_find(next, obj, weight)) != 0)
+                return found;
+            auto_nbags--;
+        }
+    }
+    return 0;
+}
+
+/* the stack obj would merge with: the paperdoll, the hands and the backpack (slots 0 to
+   AUTO_PACK_LAST) and every container in them */
+static struct Object far *auto_ammo_stack(struct Object far *obj, int weight)
+{
+    struct Object far *o;
+    struct Object far *found;
+    int slot;
+
+    for (slot = 0; slot <= AUTO_PACK_LAST; slot++) {
+        if ((o = Obj_PtrTMem(&Inventory[slot])) == 0)
+            continue;
+        auto_nbags = 0;
+        if (AddTogether(obj, o))
+            return o;
+        if (OBJ_CLASS(o) == CLASS_CONTAINER && !OBJ_ISQUANT(o) && Obj_PtrTMem(&o->ol.link) != 0) {
+            auto_bags[auto_nbags++] = o;
+            if ((found = auto_ammo_find(Obj_PtrTMem(&o->ol.link), obj, weight)) != 0)
+                return found;
+        }
+    }
+    return 0;
+}
+
+/* the next pile on tile auto_ammo may take, and the stack it goes onto */
+static struct Object far *auto_ammo_next(struct Tile far *tile, struct Object far **onto)
+{
+    struct Object far *obj;
+
+    for (obj = Obj_PtrTMem(&tile->objects); obj != 0; obj = Obj_PtrTMem(&obj->qn.link)) {
+        if (!AUTO_AMMO(obj) || IsMobElem(obj) || obj->ol.f.link & LINK_SPECIAL)
+            continue;
+        if (ComObjData[OBJ_ITEM(obj)].can_own && obj->ol.f.owner != 0)
+            continue;
+        if (!InPickRange(PickDist, obj, tile) || BlockingTerrain(PickDist, obj))
+            continue;
+        if (!EncumCheck(obj))
+            continue;
+        if ((*onto = auto_ammo_stack(obj, ItemWeight(obj))) != 0)
+            return obj;
+    }
+    return 0;
+}
+
+void far auto_ammo(void)
+{
+    struct Tile far *tile;
+    struct Object far *obj;
+    struct Object far *onto;
+    struct Bag far *bag;
+    char text[60];
+    char numbuf[6];
+    int qty, weight, i, taken;
+
+    taken = 0;
+    tile = Map_GetAddr(OBJ_HOMEX(ThePlayer), OBJ_HOMEY(ThePlayer));
+    while ((obj = auto_ammo_next(tile, &onto)) != 0) {
+        qty = OBJ_ISQUANT(obj) ? obj->ol.f.link : 1;
+        weight = ItemWeight(obj);
+        strcpy(text, "You pick up ");
+        if (qty > 1) {
+            strcat(text, itoa(qty, numbuf, 10));
+            strcat(text, " ");
+        }
+        if (!get_name(text + strlen(text), obj, qty == 1, qty > 1))
+            strcat(text, "something");
+        strcat(text, ".\n");
+        /* off the tile as release_3d takes it, its pick-up triggers fired (InPickRange has
+           set MapObj_X, MapObj_Y to the tile) */
+        checkTrap(ThePlayer, obj, 2, MapObj_X, MapObj_Y);
+        Obj_Rem(&tile->objects, obj);
+        check_pplate(obj, tile, OBJ_Z(obj), 0xF);
+        /* onto the stack as AddToOccupiedSlot and PutObjectInBag merge one */
+        if (!OBJ_ISQUANT(onto)) {
+            SET_ISQUANT(onto, 1);
+            onto->ol.f.link = 1;
+        }
+        onto->ol.f.link = onto->ol.f.link + qty;
+        onto->qn.f.quality = (onto->qn.f.quality + obj->qn.f.quality) >> 1;
+        player->weight += weight;
+        for (bag = OpenBag; bag != 0; bag = bag->prev)
+            for (i = 0; i < auto_nbags; i++)
+                if (Obj_PtrTMem(&bag->obj) == auto_bags[i])
+                    bag->weight += weight;
+        Obj_Free(obj);
+        scroll_print(text);
+        taken = 1;
+    }
+    if (taken) {
+        editchng(2);
+        FixPlayerEquips();
+        RedispInv();
+    }
+}
+
+/* port only: UW2PORT_AMMO_PROBE (a test, tools/ammocheck.py) reports on stderr, each time the
+   player enters a square, the missiles carried (the inventory and its containers) and lying
+   resting on that square, and the weight carried; it changes nothing */
+static int ammo_count(struct Object far *list)
+{
+    int n = 0;
+
+    for (; list != 0; list = Obj_PtrTMem(&list->qn.link)) {
+        if (AUTO_AMMO(list) && !(list->ol.f.link & LINK_SPECIAL))
+            n += OBJ_ISQUANT(list) ? list->ol.f.link : 1;
+        else if (!OBJ_ISQUANT(list) && list->ol.f.link > 0)
+            n += ammo_count(Obj_PtrTMem(&list->ol.link));
+    }
+    return n;
+}
+
+void far ammo_probe(void)
+{
+    static int probe = -1;              /* UW2PORT_AMMO_PROBE, read once */
+    struct Object far *obj;
+    int carried, floor, slot;
+
+    if (probe < 0) probe = getenv("UW2PORT_AMMO_PROBE") != NULL;
+    if (!probe)
+        return;
+    carried = 0;
+    for (slot = 0; slot <= AUTO_PACK_LAST; slot++)
+        if ((obj = Obj_PtrTMem(&Inventory[slot])) != 0) {
+            if (AUTO_AMMO(obj) && !(obj->ol.f.link & LINK_SPECIAL))
+                carried += OBJ_ISQUANT(obj) ? obj->ol.f.link : 1;
+            else if (!OBJ_ISQUANT(obj) && obj->ol.f.link > 0)
+                carried += ammo_count(Obj_PtrTMem(&obj->ol.link));
+        }
+    floor = 0;
+    for (obj = Obj_PtrTMem(&Map_GetAddr(OBJ_HOMEX(ThePlayer), OBJ_HOMEY(ThePlayer))->objects); obj != 0;
+         obj = Obj_PtrTMem(&obj->qn.link))
+        if (AUTO_AMMO(obj) && !IsMobElem(obj) && !(obj->ol.f.link & LINK_SPECIAL))
+            floor += OBJ_ISQUANT(obj) ? obj->ol.f.link : 1;
+    fprintf(stderr, "ammo-probe: square %d %d carried %d floor %d weight %u\n", OBJ_HOMEX(ThePlayer),
+            OBJ_HOMEY(ThePlayer), carried, floor, (unsigned)player->weight);
+}
+#endif
+
 void far player_3dtalk(void)
 {
     mouse_release(1);

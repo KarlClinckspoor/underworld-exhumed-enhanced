@@ -1,0 +1,11 @@
+# auto-ammo: from the menu, load the saved game setup/auto-ammo writes (10 sling stones in the
+# pack, the player at (19, 51) on level 1 facing the castle's door at (19, 53), 5 more sling
+# stones at their feet); walk forward off the square and back onto it again. With the flag the 5
+# stones are taken onto the pack's stack ("You pick up 5 sling stones.", 15 carried); the original
+# leaves them on the floor
+3000 key enter         # Journey Onward
+4500 key enter         # the first saved game
+8000 down s            # walk forward, to (19, 52)
+8600 up s
+11000 down x           # walk back, onto (19, 51) again
+12500 up x

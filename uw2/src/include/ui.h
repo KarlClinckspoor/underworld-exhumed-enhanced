@@ -274,6 +274,10 @@ void far player_3dtalk(void);
 void far player_3duse(void);
 void far display_scr(void);
 void far RedispInv(void);
+#ifndef __TURBOC__
+void far auto_ammo(void);               /* port only: --enhance auto-ammo */
+void far ammo_probe(void);              /* port only: UW2PORT_AMMO_PROBE */
+#endif
 void far look_nothing(unsigned char how, int txt);
 void far inv_look(void);
 void far mous_in_panel(void);
