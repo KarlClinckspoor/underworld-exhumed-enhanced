@@ -35,4 +35,8 @@ const struct enhance_flag enhance_table[ENH_COUNT] = {
     { "true-enchants", "A melee weapon's enchantment is named for what it does: Damage when it adds damage, Accuracy when it adds to hit (the original names them the other way round)", ENH_FIX, NULL, "UW2" },
     /* obj/USEITEMS.C's UseKeyOn: a key that does not fit tries the other keys carried */
     { "key-ring", "A key that does not fit tries the other keys you carry, bags included, and locks or unlocks with the one that fits", ENH_GAMEPLAY, NULL, NULL },
+    /* motion/OBJPHYS.C's missile_newhit takes a missile's damage from its ammunition and the
+       Missile skill alone, so a bow, crossbow or sling "of Damage" or "of Accuracy" does nothing;
+       this applies the launcher's enchantment as DoPlayerWeapon applies a melee weapon's */
+    { "launcher-enchants", "A bow, crossbow or sling's enchantment counts: its damage bonus is added to each missile it shoots, its accuracy bonus to the Missile skill's check", ENH_FIX, NULL, NULL },
 };

@@ -1,0 +1,40 @@
+# launcher-enchants: from the menu, load the saved game setup/launcher-enchants writes (on level 1
+# at (36, 6), facing the locked door at (36, 8), with a crossbow "of Unsurpassed Damage" (effect
+# 15), a bow "of Unsurpassed Accuracy" (effect 7), crossbow bolts and arrows in the pack). Put
+# the crossbow in the weapon hand and shoot two bolts at the door; put it back, take the bow and
+# shoot two arrows. With the fix each bolt's damage before the dice is 8 more (DoPlayerWeapon's
+# (effect & 7) + 1) and each arrow's Missile-skill check is made at the skill plus 8; without it
+# (the original: the same recording with its enhancements chunk naming skip-intro alone) the
+# launchers add nothing. tools/launchercheck.py reads both from the missile probe
+3000 key enter         # Journey Onward
+4500 key enter         # the first saved game
+6500 move 250 92    # the crossbow, from the pack into the weapon hand
+6800 mdown 250 92 right
+7100 move 277 68
+7400 move 304 44
+7700 mup 304 44 right
+8900 key f5    # fight mode: the weapon drawn
+9700 move 140 90
+10400 mdown 140 90 right    # drawn until the gem is ready, then released in the view: a bolt at the door
+11900 mup 140 90 right
+12600 mdown 140 90 right
+14100 mup 140 90 right
+15600 key f5    # fight mode left
+16800 move 304 44    # the crossbow back into the pack
+17100 mdown 304 44 right
+17400 move 277 68
+17700 move 250 92
+18000 mup 250 92 right
+19200 move 268 92    # the bow into the weapon hand
+19500 mdown 268 92 right
+19800 move 286 68
+20100 move 304 44
+20400 mup 304 44 right
+21600 key f5    # fight mode: the weapon drawn
+22400 move 140 90
+23100 mdown 140 90 right    # two arrows at the door
+24600 mup 140 90 right
+25300 mdown 140 90 right
+26800 mup 140 90 right
+28300 key f5    # fight mode left
+29800 move 160 100

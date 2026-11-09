@@ -1,0 +1,40 @@
+# launcher-enchants: the saved game the launcher-enchants enhanced session starts from. A new
+# character, as the newgame session makes one (every default, the name avatar); then a test's
+# cheats (EXHUME_TEST_CHEATS=1; recording format 6): a crossbow with the weapon enchantment of
+# effect 15 ("of Unsurpassed Damage", 8 damage) and a bow with effect 7 ("of Unsurpassed
+# Accuracy", 8 to hit), as a level stores them (give ITEM enchant N), 10 crossbow bolts and 10
+# arrows, into the pack; and the player moved to (36, 6) on level 1, facing the locked door at
+# (36, 8) (key-ring's), a square back so that a missile has room. Saved in slot I, described "bows"
+9000 key esc
+12000 key esc
+15000 key enter        # Create Character
+18000 key enter        # every default: sex, handedness, class, the skills, the portrait,
+20000 key enter        # the difficulty
+22000 key enter
+24000 key enter
+26000 key enter
+28000 key enter
+30000 key enter
+32000 key enter
+34000 key a            # the name
+34200 key v
+34400 key a
+34600 key t
+34800 key a
+35000 key r
+36000 key enter
+38000 key enter        # Yes
+44000 cheat give 0x01A enchant 15
+44100 cheat give 0x019 enchant 7
+44200 cheat give 0x011 10
+44300 cheat give 0x012 10
+44400 cheat goto 1 36 6
+47000 down ctrl        # save: Ctrl+S, slot I, "bows"
+47100 key s
+47300 up ctrl
+49000 key enter
+50500 key b
+50700 key o
+50900 key w
+51100 key s
+52000 key enter

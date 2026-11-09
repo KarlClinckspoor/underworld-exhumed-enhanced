@@ -11,7 +11,7 @@
                              it is refused on this level; on another, which is not loaded until
                              the move, the game kills the player it cannot place, as it does
                              after any teleport; LEVEL 1 to 9, X and Y 1 to 62
-     give ITEM [QTY [QUALITY]] [spell N] [owner N] [drop]
+     give ITEM [QTY [QUALITY]] [enchant N | spell N] [owner N] [drop]
                              CreateObj (the game's allocator), QTY of a stack (1 to 511) and
                              QUALITY (0 to 63; else the game's 40), into the first empty
                              backpack slot on show (AddToInventory) when the player can carry it
@@ -23,7 +23,13 @@
                              spell N of spells[] (0 to NUM_SPELLS - 1), as a level's enchanted
                              objects are stored and decode_obj_spell reads them: ID_ENCHANT
                              and ID_FLAG11 set, the link LINK_SPECIAL + N (LOOK.C names it
-                             "of" string 0x100 + N); QTY, the same link, may then only be 1
+                             "of" string 0x100 + N); QTY, the same link, may then only be 1.
+                             enchant N gives an object that is not a quantity (a weapon or a
+                             launcher) the weapon enchantment of effect N, 0 to 15, as UW2's
+                             give does: a spell object (ITEM_SPELL, CreateObj) in its contents
+                             (Obj_Add), of class 12 (its link LINK_SPECIAL + 0xC0 + N, id bit 11
+                             clear), which decode_obj_spell reads as a level's (effects 0 to 7
+                             add to hit, 8 to 15 damage: combat/COMBAT.C's DoPlayerWeapon)
                              owner N sets the owner field (0 to 63; CreateObj leaves 0): for a key,
                              the number of the lock it opens (UseKeyOn)
      set FIELD VALUE         hp (1 to the maximum), mana (0 to the maximum), str, dex, int (1 to
@@ -82,12 +88,18 @@ static const char *c_goto(int argc, char *argv[], int run)
 
 static const char *c_give(int argc, char *argv[], int run)
 {
-    long item = -1, qty = 0, quality = -1, spell = -1, owner = -1, v;
+    long item = -1, qty = 0, quality = -1, enchant = -1, spell = -1, owner = -1, v;
     int drop = 0, i, n = 0, slot;
     struct Object far *obj;
+    struct Object far *sp;
     for (i = 0; i < argc; i++) {
         if (!strcmp(argv[i], "drop")) {
             drop = 1;
+            continue;
+        }
+        if (!strcmp(argv[i], "enchant")) {
+            if (++i == argc || cheat_num(argv[i], 0, 15, &enchant))
+                return "enchant and an effect, 0 to 15";
             continue;
         }
         if (!strcmp(argv[i], "spell")) {
@@ -110,6 +122,7 @@ static const char *c_give(int argc, char *argv[], int run)
     if (n == 0) return "an item";
     if (!((item >= 0 && item <= 0x3F) || (item >= 0x80 && item <= 0x13F)))
         return "an object a player can carry: 0x000 to 0x03F or 0x080 to 0x13F";
+    if (enchant >= 0 && spell >= 0) return "an enchantment or a spell, not both";
     if (qty > 1 && spell >= 0) return "a spell on one object, not a stack";
     if (!run) return NULL;
     if ((obj = CreateObj((int)item, 0)) == 0) return "no free object";
@@ -124,6 +137,19 @@ static const char *c_give(int argc, char *argv[], int run)
             obj->id |= ID_ENCHANT | ID_FLAG11;
             obj->ol.f.link = (uint16)(LINK_SPECIAL | spell);
         }
+    }
+    if (enchant >= 0) {
+        if (OBJ_ISQUANT(obj)) {
+            Obj_Free(obj);
+            return "not an object that holds an enchantment (a weapon)";
+        }
+        if ((sp = CreateObj(ITEM_SPELL, 0)) == 0) {
+            Obj_Free(obj);
+            return "no free object";
+        }
+        sp->ol.f.link = (uint16)(LINK_SPECIAL | 0xC0 | enchant);   /* class 12, effect N */
+        sp->id = (sp->id & ~ID_FLAG11) | ID_ISQUANT;     /* not a charged spell; a property link */
+        Obj_Add(&obj->ol.link, sp);
     }
     if (quality >= 0) obj->qn.f.quality = (uint16)quality;
     if (owner >= 0) obj->ol.f.owner = (uint16)owner;
@@ -202,7 +228,7 @@ static const char *c_set(int argc, char *argv[], int run)
 
 static const struct cheat_cmd cmds[] = {
     { "goto", "LEVEL X Y", c_goto },
-    { "give", "ITEM [QTY [QUALITY]] [spell N] [owner N] [drop]", c_give },
+    { "give", "ITEM [QTY [QUALITY]] [enchant N | spell N] [owner N] [drop]", c_give },
     { "set", "FIELD VALUE", c_set },
 };
 

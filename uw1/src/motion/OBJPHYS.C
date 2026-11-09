@@ -43,9 +43,15 @@
    static_to_mob). */
 
 #include <stdlib.h>
+#ifndef __TURBOC__
+#include <stdio.h>                      /* the missile probe (missile_newhit) */
+#endif
 #include "combat.h"
 #include "critter.h"
 #include "event.h"
+#ifndef __TURBOC__
+#include "inv.h"                        /* --enhance launcher-enchants: the weapon hand */
+#endif
 #include "map.h"
 #include "motion.h"
 #include "object.h"
@@ -98,6 +104,38 @@ int far bounce_obj(struct Object far *obj, struct Object far *other)
     return 4;
 }
 
+#ifndef __TURBOC__
+/* port only: --enhance launcher-enchants (docs/ENHANCEMENTS.md). Nothing in the original reads
+   the launcher a missile was shot from: player_fire (combat/MISSILE.C) uses it only to choose
+   the ammunition, and missile_newhit below takes the damage from the ammunition's Missile[]
+   entry and the Missile skill, so a launcher's enchantment does nothing. With the fix, the
+   launcher in the player's weapon hand when the missile strikes, if it fires this ammunition
+   (Missile[launcher].ammo, as GetPlayerWeapon and check_ammo read it), has its class 12
+   enchantment applied with DoPlayerWeapon's arithmetic (combat/COMBAT.C): effects 8 to 15 add
+   (effect & 7) + 1 damage, 0 to 7 add (effect & 7) + 1 to hit. A missile has no to-hit roll,
+   so the to-hit bonus goes to the one skill check missile_newhit makes. The launcher is read
+   when the missile strikes, as missile_newhit reads the Missile skill then. Returns the effect,
+   or -1 for none. */
+static int launcher_bonus(int ammo, int *dmg, int *hit)
+{
+    struct Object far *weap;
+    int16 major;
+    int16 effect;
+    char flag;
+
+    weap = AskInventory(INV_WEAPON_HAND - player->lefty);
+    if (weap == 0 || OBJ_ITEM(weap) >> 4 != CLASS_MISSILE || Missile[OBJ_INCLASS(weap)].ammo != ammo)
+        return -1;
+    if (!decode_obj_spell(weap, &major, &effect, &flag) || flag || major != 0xC)
+        return -1;
+    if (effect & 8)
+        *dmg = (effect & 7) + 1;
+    else
+        *hit = (effect & 7) + 1;
+    return effect;
+}
+#endif
+
 /* proj strikes hit: the missile's damage (Missile[] by its in-class index), scaled by
    the Missile skill and a skill check when the player (object 1) fired it and its
    Missile[] ammo field is -64 (meaning not known), applied with missile_thwack at the
@@ -109,12 +147,24 @@ void far missile_newhit(struct Object far *proj, struct Object far *hit)
     int y;
     struct MissileInfo *mi;
     int scale;
+#ifndef __TURBOC__
+    int bonus_dmg = 0, bonus_hit = 0, effect = -1, grade;
+    static int missile_probe = -1;      /* UW1PORT_MISSILE_PROBE, read once */
+#endif
 
     mi = &Missile[OBJ_INCLASS(proj)];
     damage = mi->damage;
     if (proj->last_hit == 1 && mi->ammo == -64) {
+#ifndef __TURBOC__
+        if (ENHANCED(ENH_LAUNCHER_ENCHANTS))
+            effect = launcher_bonus(OBJ_INCLASS(proj), &bonus_dmg, &bonus_hit);
+#endif
         scale = (player->skills[SKILL_MISSILE] << 3) + 0xC0;
+#ifndef __TURBOC__
+        switch (grade = skill_check(player->skills[SKILL_MISSILE] + bonus_hit, 10)) {
+#else
         switch (skill_check(player->skills[SKILL_MISSILE], 10)) {
+#endif
         case -1:
             scale -= 0x80;
             break;
@@ -123,6 +173,20 @@ void far missile_newhit(struct Object far *proj, struct Object far *hit)
             break;
         }
         damage = damage * scale >> 8;
+#ifndef __TURBOC__
+        /* port only: the launcher's damage bonus, after the Missile skill's scale and before
+           do_damage's dice, as DoPlayerWeapon adds a melee weapon's to its damage byte.
+           UW1PORT_MISSILE_PROBE (a test, tools/launchercheck.py) reports the inputs on stderr */
+        damage += bonus_dmg;
+        if (missile_probe < 0) missile_probe = getenv("UW1PORT_MISSILE_PROBE") != NULL;
+        if (missile_probe) {
+            struct Object far *weap = AskInventory(INV_WEAPON_HAND - player->lefty);
+            fprintf(stderr, "missile-probe: ammo %d base %u skill %u launcher %d effect %d bonus-damage %d"
+                    " bonus-hit %d check %d grade %d scale %d damage %u\n", OBJ_INCLASS(proj), mi->damage,
+                    player->skills[SKILL_MISSILE], weap ? OBJ_ITEM(weap) : -1, effect, bonus_dmg, bonus_hit,
+                    player->skills[SKILL_MISSILE] + bonus_hit, grade, scale, damage);
+        }
+#endif
     }
     if (objhit_used) {
         x = objhit_tilex;
