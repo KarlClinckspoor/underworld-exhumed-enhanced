@@ -54,7 +54,7 @@ PY = os.path.join(root, '.venv', 'bin', 'python')
 if not os.path.exists(PY): PY = sys.executable
 DATA = os.environ.get('UW2_DIR') or (os.path.dirname(os.environ['UW2_EXE']) if os.environ.get('UW2_EXE')
                                      else os.path.expanduser('~/UWGOG/UW2'))
-HOOKS = re.compile(r'\b(GAME_TIME|KEY|MOUSE|MBUTTONS|JOY_READ|JOY_BUTTONS|WALL_TIME|SRAND|CHECKPOINT|STACK_JUNK|SND_READ|SLAVE_TIMER)\(')
+HOOKS = re.compile(r'\b(GAME_TIME|KEY|MOUSE|MBUTTONS|JOY_READ|JOY_BUTTONS|WALL_TIME|SRAND|CHECKPOINT|STACK_JUNK|STACK_JUNK_SET|SND_READ|SLAVE_TIMER)\(')
 KINDS = {1: 'checkpoint', 2: 'periodic', 3: 'input', 4: 'end', 5: 'DESYNC', 6: 'hook'}
 STREAMS = {1: 'TIME', 2: 'KEY', 3: 'MOUSE', 4: 'BUTTONS', 5: 'JOY', 6: 'JOYB', 7: 'MISC', 8: 'SOUND'}
 # Byte ranges of a section that are the program's machinery rather than game state:

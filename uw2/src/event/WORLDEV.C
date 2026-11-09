@@ -53,14 +53,64 @@ void far set_numbered_variable(int var, int how, int val);
 
 /* name: 1: TeleportCharToTile_ovr110_0. A breadth-first search outward from (x, y), at most
    20 tiles a ring, for a tile within the 9x9 box around it where the object fits. */
+/* The visited table: one bit a square of the box, one word a column. It is 9 words for the
+   box's 10 columns (xmax = xmin + 9), and the original clears 9 of its 18 bytes:
+   - bytes 9 to 17 (the start's column's last two rows, then the four columns east of it)
+     start as whatever the stack held, which in DOS depends on the calls before and the
+     timer interrupts. They are stack junk: cleared in the replay build and the port
+     (STACK_JUNK_SET), so that a search there passes no free square by;
+   - a square of the last column reads and sets word 9, past the table. That is no junk: in
+     UW2.EXE (ovr110) the table is at BP-7Ah and word 9 is next_list's first entry at BP-68h,
+     so the last column's bits are the first queued square's coordinates, and setting one
+     changes them. The port has that word where DOS has it (port_visited, below).
+   A square outside the box reads a word beside the table too (VISITED comes before the
+   bounds test), but the bounds test then refuses it whatever the word holds. */
+#ifdef __TURBOC__
 #define VISITED(tx, ty) (visited[(tx) - xmin] & (1 << ((ty) - ymin)))
+#define VISIT_MARK(tx, ty) visited[(tx) - xmin] |= 1 << ((ty) - ymin)
+#else
+/* port only: column c's word, or with set, the word or'ed with the row's bit: words 0 to 8
+   from the table, word 9 from next_list's first entry (its two bytes, low first), as DOS's
+   stack frame has them; a column or row outside the box reads as nothing visited, as its
+   square is refused whatever its word holds (above) */
+static unsigned port_visited(uint16 *visited, char (*next_list)[2], int c, int r, int set)
+{
+    unsigned w;
+    if (c < 0 || c > 9 || r < 0 || r > 15)
+        return 0;
+    w = c < 9 ? visited[c] : ((unsigned char)next_list[0][0] | (unsigned char)next_list[0][1] << 8);
+    if (!set)
+        return w & (1u << r);
+    w |= 1u << r;
+    if (c < 9)
+        visited[c] = (uint16)w;
+    else {
+        next_list[0][0] = (char)w;
+        next_list[0][1] = (char)(w >> 8);
+    }
+    return 0;
+}
+#define VISITED(tx, ty) port_visited(visited, next_list, (tx) - xmin, (ty) - ymin, 0)
+#define VISIT_MARK(tx, ty) port_visited(visited, next_list, (tx) - xmin, (ty) - ymin, 1)
+
+/* port only, tests (tools/searchcheck.py): UW2PORT_SEARCH_PROBE reports each search on stderr,
+   where it started and the square it found; UW2PORT_SEARCH_POISON fills the visited table with
+   set bits before the search clears it, as the worst stack would leave it */
+#include <stdio.h>
+static void port_search_report(int x, int y, char clear, int found, int nx, int ny)
+{
+    if (getenv("UW2PORT_SEARCH_PROBE"))
+        fprintf(stderr, found ? "search-probe: from %d %d clear %d found %d %d\n"
+                              : "search-probe: from %d %d clear %d none\n", x, y, clear, nx, ny);
+}
+#endif
 #define VISIT(tx, ty) \
     if (!VISITED(tx, ty) && nnext < 20 \
         && (tx) >= xmin && (tx) <= xmax && (ty) >= ymin && (ty) <= ymax) { \
         next[nnext][0] = (tx); \
         next[nnext][1] = (ty); \
         nnext++; \
-        visited[(tx) - xmin] |= 1 << ((ty) - ymin); \
+        VISIT_MARK(tx, ty); \
     }
 unsigned char far find_good_x_and_y(struct Object far *obj, int x, int y,
                                     int16 *nx, int16 *ny, char clear)
@@ -79,7 +129,17 @@ unsigned char far find_good_x_and_y(struct Object far *obj, int x, int y,
 
     memset(cur_list, 0, 0x14);
     memset(next_list, 0, 0x14);
+#ifndef __TURBOC__
+    if (getenv("UW2PORT_SEARCH_POISON"))
+        memset(visited, 0xFF, sizeof visited);
+#endif
     memset(visited, 0, 9);
+    /* the rest of the table, junk in DOS (above): 0 in the replay build and the port */
+    STACK_JUNK_SET(visited[4], 0);
+    STACK_JUNK_SET(visited[5], 0);
+    STACK_JUNK_SET(visited[6], 0);
+    STACK_JUNK_SET(visited[7], 0);
+    STACK_JUNK_SET(visited[8], 0);
     xmin = max(1, x - 4);
     xmin = min(xmin, 0x3A);
     ymin = max(1, y - 4);
@@ -114,6 +174,9 @@ unsigned char far find_good_x_and_y(struct Object far *obj, int x, int y,
                           0, 8)) {
                 *nx = tx;
                 *ny = ty;
+#ifndef __TURBOC__
+                port_search_report(x, y, clear, 1, tx, ty);
+#endif
                 return 1;
             }
             switch (tile->type) {
@@ -153,6 +216,9 @@ unsigned char far find_good_x_and_y(struct Object far *obj, int x, int y,
             nnext = 0;
         }
     }
+#ifndef __TURBOC__
+    port_search_report(x, y, clear, 0, 0, 0);
+#endif
     return 0;
 }
 

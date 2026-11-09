@@ -1,0 +1,13 @@
+# search: tools/searchcheck.py's session (not a DOS golden: it has a test's cheat, format 6),
+# recorded by the port from this script from the saved game setup/plain-debris writes (a new
+# character on level 1). "Journey Onward" and the first saved game; then the test's cheat goto
+# 1 43 9, a teleport within the level onto (43,9), a diagonal tile open to the south east, whose
+# wall runs through the middle of the square, so the player does not fit there. do_teleport's
+# find_good_x_and_y then tries the two squares the diagonal opens onto: (44,9), east, open
+# floor, where the player fits, and (43,8), rock. (44,9) is in the column after the start's,
+# whose bits in the visited table the original never clears; the port left them to its own
+# stack and refused the teleport ("no free square there"); with the whole table cleared the
+# player lands on (44,9)
+3000 key enter         # Journey Onward
+4500 key enter         # the first saved game
+8000 cheat goto 1 43 9

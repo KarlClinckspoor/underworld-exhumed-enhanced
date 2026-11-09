@@ -271,12 +271,12 @@ Each entry was re-read against the source before it was written here, and each "
 
 - **What happens:** `find_good_x_and_y` searches outwards from a square, breadth first, for one where an object fits (a teleport's arrival, a critter or object put down). Two slips:
   - With `clear` set it deletes the objects in its way. After `Obj_Punt` removes one, the loop steps on through that object's own link (`link = &o->qn.link`), which the removal has just cleared, so the walk ends at the first object it deletes: at most one object per square is cleared on each visit.
-  - `visited` is `uint16 visited[9]`, 18 bytes, but `memset(visited, 0, 9)` clears only the first 9, so the bits for the box's later columns start as whatever the stack held, and a square there may count as tried already. The box is 10 columns wide (`xmax = xmin + 9`), so a square in its last column sets `visited[9]`, one entry past the array, in the stack variable after it.
+  - `visited` is `uint16 visited[9]`, 18 bytes, but `memset(visited, 0, 9)` clears only the first 9, so the bits from the high byte of word 4 on (the start's column's last two rows, then the four columns east of it) start as whatever the stack held, and a square there may count as tried already. The box is 10 columns wide (`xmax = xmin + 9`), so a square in its last column reads and sets `visited[9]`, one entry past the array. In UW.EXE (ovr107) the frame puts `visited` at BP-7Ah, `next_list` at BP-68h and `cur_list` at BP-40h, so `visited[9]` is `next_list[0]`, the first queued square's coordinates: the last column's bits are those coordinates read as bits, and marking a square there ors a bit into them. That part is deterministic; only the uncleared bytes depend on the stack.
 - **Where:** `find_good_x_and_y` in [event/WORLDEV.C](../src/event/WORLDEV.C).
-- **Evidence:** code reading; both games (UW2Decomp `event/WORLDEV.C` has the same code). Not checked in the game.
-- **Confidence:** likely.
+- **Evidence:** code reading; both games, the same code and the same frame (the offsets above read in UW.EXE and UW2.EXE). Seen in the port: a teleport onto a diagonal square (the player never fits where its wall crosses the middle) asks the square to its east, in an uncleared column, next; before the port cleared those bytes, a test's `goto` onto UW1's (43,9) was refused as having no free square, though (44,9) beside it is open floor (`tools/searchcheck.py`, [PORT.md](PORT.md)).
+- **Confidence:** confirmed (the uncleared bytes and the frame); likely (the clearing pass).
 - **Effect:** a search can give up, or pick a farther square, where a free one was nearer; and clearing a crowded square takes several visits. Which squares are skipped depends on the stack's leftover contents.
-- **For a port:** `visited[9]` is a write past the array on the host's stack, not into DOS's neighbouring variable, so a port must give the array room for it (or model DOS's stack layout) to stay memory-safe; matching DOS's skipped squares also means modelling the uncleared bytes.
+- **For a port:** done: the uncleared bytes are stack junk, 0 in the replay build and the port (`STACK_JUNK_SET`), and the port models DOS's frame for `visited[9]`, reading and setting `next_list[0]`'s two bytes, so it stays memory-safe and plays as DOS ([PORT.md](PORT.md)).
 
 ### Candidates that did not hold up
 
