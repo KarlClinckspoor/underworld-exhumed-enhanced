@@ -1,0 +1,30 @@
+{
+ "format": 1,
+ "session": "auto-ammo-heavy",
+ "made_by": "port",
+ "note": "made by the port, not DOS: a regression baseline for an enhancement DOS does not have",
+ "enhancements": [
+  "skip-intro",
+  "auto-ammo"
+ ],
+ "recording": {
+  "path": "tests/replay/enhanced/auto-ammo-heavy/session.rec",
+  "sha256": "b2b5853cdbcbf67cce464978c497c2edd0ab84fc2c5bedad8265769fc02aa541"
+ },
+ "checkpoints": [
+  {"ck":[1,1,1,0],"secs":{"PLYR":"c538c83f9e14ddbb","RAND":"8bd8c013246aa84c","CNTS":"9beb49d3cbb37d25","GFX":"65553ae13d465e15","PAL":"563d54ecf695bde1","CRTC":"b7a81f2b97e7f8a3","VGA":"afba826fc8f2ea41"}},
+  {"ck":[3,32768,3,0],"secs":{"PLYR":"c538c83f9e14ddbb","RAND":"8bd8c013246aa84c","CNTS":"1497182f8b79238d","GFX":"65553ae13d465e15","PAL":"563d54ecf695bde1","CRTC":"b7a81f2b97e7f8a3","VGA":"afba826fc8f2ea41"}},
+  {"ck":[1,2,5,0],"secs":{"PLYR":"c538c83f9e14ddbb","RAND":"8bd8c013246aa84c","CNTS":"56f7a81db4abd91e","GFX":"65553ae13d465e15","PAL":"563d54ecf695bde1","CRTC":"b7a81f2b97e7f8a3","VGA":"afba826fc8f2ea41"}},
+  {"ck":[3,7181,854637,743],"secs":{"PLYR":"c538c83f9e14ddbb","RAND":"8bd8c013246aa84c","CNTS":"3d2b09375ec468f2","GFX":"497d58606567052a","PAL":"d639abda06082169","CRTC":"b7a81f2b97e7f8a3","VGA":"eb6cbd3b935d45ac"}},
+  {"ck":[2,0,1260229,1024],"secs":{"PLYR":"c538c83f9e14ddbb","RAND":"8bd8c013246aa84c","CNTS":"12f77814062f5958"}},
+  {"ck":[3,7181,1407491,1123],"secs":{"PLYR":"c538c83f9e14ddbb","RAND":"8bd8c013246aa84c","CNTS":"c36ef770936cd6aa","GFX":"4b42b55a28c53264","PAL":"f7a05cc7c9233612","CRTC":"b7a81f2b97e7f8a3","VGA":"2a76cdb8c538280f"}},
+  {"ck":[1,3,1407493,1131],"secs":{"PLYR":"ee2edc7a16864cf0","RAND":"8bd8c013246aa84c","LEVL":"071da179e070c137","CNTS":"d9216b152fea4187","GFX":"af6445b122031ea4","PAL":"f7a05cc7c9233612","CRTC":"b7a81f2b97e7f8a3","VGA":"9adc9c23f8cbf71b"}},
+  {"ck":[1,4,1458985,1328],"secs":{"PLYR":"ee2edc7a16864cf0","RAND":"8bd8c013246aa84c","LEVL":"071da179e070c137","CNTS":"0e71929f50fa4d09","GFX":"407e338124dac2c6","PAL":"2e404218780e5666","CRTC":"5820c1822f777b43","VGA":"e803fc96f5428a8c"}},
+  {"ck":[1,5,1509343,1501],"secs":{"PLYR":"ee2edc7a16864cf0","RAND":"8bd8c013246aa84c","LEVL":"071da179e070c137","CNTS":"2256a254863139e7","GFX":"08314a50333b7701","PAL":"563d54ecf695bde1","CRTC":"5820c1822f777b43","VGA":"36374204bb414169"}},
+  {"ck":[3,11640,1644853,1770],"secs":{"PLYR":"20f3c45fb802241f","RAND":"62d084ad5927e499","LEVL":"2a836e4faac40411","CNTS":"266ce152aaf82f27","GFX":"9501fdb08b84de00","PAL":"9fb142075c08f003","CRTC":"5820c1822f777b43","VGA":"da75892c5aaea87f"}},
+  {"ck":[2,0,1646347,2051],"secs":{"PLYR":"c5434797a0b08537","RAND":"bef4545a22436c9f","LEVL":"43f56b4146812155","CNTS":"1561e9ea456ec434"}},
+  {"ck":[3,8051,1904898,2544],"secs":{"PLYR":"6f8d4e3b6ebb330d","RAND":"305acf96d26255be","LEVL":"382a571a9de0d34c","CNTS":"1c62d596493a2535","GFX":"26f3c67f06a9dd73","PAL":"ae89f375ea9fc112","CRTC":"5820c1822f777b43","VGA":"9accf6f992c9c9f4"}},
+  {"ck":[2,0,2053064,3072],"secs":{"PLYR":"e3f626e4244f7da4","RAND":"237eb04b9109e731","LEVL":"9112a4511dad0131","CNTS":"ffe054c4c589f25b"}},
+  {"ck":[4,0,2348856,3562],"secs":{"PLYR":"a1ae5b9911628c07","RAND":"a550334acc55f2b8","LEVL":"74595d05576a59a6","CNTS":"8d52b2dcafdc2312","GFX":"04e40097eecae6d0","PAL":"27f16a351a196da6","CRTC":"5820c1822f777b43","VGA":"053673fec33138ac"}}
+ ]
+}

@@ -198,6 +198,9 @@ char far simple_fizix(int turn)
     struct MotionCalc calc;
     register int i;
     register int heading;
+#ifndef __TURBOC__
+    char entered = 0;                   /* port only: the player entered a square */
+#endif
 
     if (PN.acc[2] == 0 && PN.speed < MaxPlayerAccel)
     {
@@ -246,6 +249,9 @@ char far simple_fizix(int turn)
                     Obj_Add(&(mapdata + GrSq)->objects, ThePlayer);
                     SET_HOMEX(ThePlayer, PN.x >> 8);
                     SET_HOMEY(ThePlayer, PN.y >> 8);
+#ifndef __TURBOC__
+                    entered = 1;
+#endif
                 }
                 SET_FINEX_UNSIGNED(ThePlayer, (PN.x >> 5) & 7);
                 SET_FINEY(ThePlayer, (PN.y >> 5) & 7);
@@ -256,6 +262,15 @@ char far simple_fizix(int turn)
                 }
                 else if (PN.acc[2] == 0 && !flying)
                     PN.acc[2] = -4;
+#ifndef __TURBOC__
+                /* port only: --enhance auto-ammo, as phys_affect_player below */
+                if (entered)
+                {
+                    if (ENHANCED(ENH_AUTO_AMMO))
+                        auto_ammo();
+                    ammo_probe();
+                }
+#endif
                 parse_player_terr(nvokTerr, 0);
                 SET_FRAME(ThePlayer, ((unsigned)GAME_TIME() & 0xFF) >> 6);
                 oldP = curP;
@@ -385,6 +400,9 @@ void far phys_affect_player(void)
     int vol;
     register int16 h;
     register int sq;
+#ifndef __TURBOC__
+    char entered = 0;                   /* port only: the player entered a square */
+#endif
 
     /* UW1: the tile change written out (UW2 calls change_GrSq and player_newsq) */
     if ((sq = (PN.x >> 8) + ((PN.y >> 8) << 6)) != GrSq)
@@ -395,11 +413,24 @@ void far phys_affect_player(void)
         Obj_Add(&(mapdata + GrSq)->objects, ThePlayer);
         SET_HOMEX(ThePlayer, PN.x >> 8);
         SET_HOMEY(ThePlayer, PN.y >> 8);
+#ifndef __TURBOC__
+        entered = 1;
+#endif
     }
     SET_FINEX_UNSIGNED(ThePlayer, (PN.x >> 5) & 7);
     SET_FINEY(ThePlayer, (PN.y >> 5) & 7);
     SET_Z(ThePlayer, PN.z >> 3);
     SET_FRAME(ThePlayer, ((unsigned)GAME_TIME() & 0xFF) >> 6);
+#ifndef __TURBOC__
+    /* port only: --enhance auto-ammo takes the missiles on the square entered that merge
+       with a stack carried; UW1PORT_AMMO_PROBE reports them (INTERACT.C) */
+    if (entered)
+    {
+        if (ENHANCED(ENH_AUTO_AMMO))
+            auto_ammo();
+        ammo_probe();
+    }
+#endif
     if (PN.impact && PN.heading == PlayerHeading)
         PN.speed = 0;
     if (PN.heading != PlayerHeading)

@@ -1,0 +1,11 @@
+# auto-ammo-heavy: as auto-ammo, from the saved game setup/auto-ammo-heavy writes (10 sling stones
+# in the pack, the player at (36, 7) on level 1 facing the locked door at (36, 8), 5 more sling
+# stones at their feet, and the weight carried all the player can carry, 200 of 200); walk back off
+# the square and forward onto it again. The 5 stones would take the player over that weight, so
+# they stay on the floor and nothing is said, with the flag as without it
+3000 key enter         # Journey Onward
+4500 key enter         # the first saved game
+7000 down x            # walk back, to (36, 6)
+8000 up x
+10000 down s           # walk forward, onto (36, 7) again
+11000 up s
